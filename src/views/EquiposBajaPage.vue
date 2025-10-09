@@ -1,23 +1,23 @@
 <template>
-	<section>
-		<h1>Equipos Dados de Baja</h1>
-		<n-data-table
-			:columns="columns"
-			:data="equiposBaja"
-			:row-key="rowKey"
-			:loading="cargando"
-			:pagination="pagination"
-		/>
-		<n-empty
-			v-if="!cargando && equiposBaja.length === 0"
-			description="Todavía no hay equipos dados de baja"
-		/>
-	</section>
+	<n-space vertical :size="24">
+		<!-- 1. Encabezado de Página para Consistencia -->
+		<n-page-header>
+			<template #title>
+				<h1 class="page-title">Equipos Dados de Baja</h1>
+			</template>
+		</n-page-header>
+
+		<!-- 2. Encapsulamiento en Tarjeta -->
+		<n-card title="Registro Histórico" :bordered="false" class="data-card">
+			<n-data-table :columns="columns" :data="equiposBaja" :row-key="rowKey" :loading="cargando"
+				:pagination="pagination" responsive />
+		</n-card>
+	</n-space>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { NDataTable, NEmpty } from 'naive-ui'
+import { NDataTable, NCard, NPageHeader, NSpace } from 'naive-ui'
 import { supabase } from '../lib/supabaseClient'
 import type { Equipo } from '../types/equipo'
 
@@ -27,12 +27,12 @@ const pagination = { pageSize: 10 }
 const rowKey = (row: Equipo) => row.id!
 
 const columns = [
-	{ title: 'Fecha de Baja', key: 'fecha_baja', width: 150 },
-	{ title: 'Tipo de Equipo', key: 'tipo_equipo' },
-	{ title: 'Modelo', key: 'modelo' },
-	{ title: 'N° Serie', key: 'num_serie' },
-	{ title: 'N° Inventario', key: 'num_inventario' },
-	{ title: 'Último Depto.', key: 'departamento' },
+	{ title: 'Fecha de Baja', key: 'fecha_baja', width: 150, resizable: true },
+	{ title: 'Tipo de Equipo', key: 'tipo_equipo', resizable: true },
+	{ title: 'Modelo', key: 'modelo', resizable: true },
+	{ title: 'N° Serie', key: 'num_serie', resizable: true },
+	{ title: 'N° Inventario', key: 'num_inventario', resizable: true },
+	{ title: 'Último Depto.', key: 'departamento', resizable: true },
 ]
 
 const fetchEquiposBaja = async () => {
@@ -51,10 +51,14 @@ onMounted(fetchEquiposBaja)
 </script>
 
 <style scoped>
-section {
-	padding: 1rem;
+/* 3. Estilos Consistentes */
+.page-title {
+	font-size: 2rem;
+	font-weight: 600;
+	margin: 0;
 }
-h1 {
-	margin-bottom: 1.5rem;
+
+.data-card {
+	border-radius: 12px;
 }
 </style>
