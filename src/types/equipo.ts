@@ -1,11 +1,15 @@
 export interface Equipo {
-	id?: number // Es opcional porque al crear uno nuevo no tiene id
+	id?: number
 	fecha_ingreso: number | null
-	tipo_equipo: string
+	tipo_equipo: string | null
 	modelo: string
 	num_serie: string
 	num_inventario: string
+	direccion: string
 	departamento: string
+	unidad: string
+	responsable: string
 	estado: string
-	fecha_baja?: string | null // La fecha cuando se da de baja
+	fecha_baja?: string | null
+	detalles?: { [key: string]: string }
 }

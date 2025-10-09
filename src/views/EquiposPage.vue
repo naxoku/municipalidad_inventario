@@ -1,104 +1,87 @@
 <template>
 	<n-space vertical :size="24">
-		<!-- 1. Encabezado de Página para Jerarquía -->
 		<n-page-header>
 			<template #title>
 				<h1 class="page-title">Equipos Activos</h1>
 			</template>
 			<template #extra>
-				<!-- 3. Botón de Acción Mejorado -->
-				<n-button type="primary" @click="mostrarModal = true" :render-icon="renderIconAdd">
+				<n-button type="primary" @click="mostrarModalAgregar = true" :render-icon="renderIconAdd">
 					Agregar Equipo
 				</n-button>
 			</template>
 		</n-page-header>
 
-		<!-- Mensaje de Alerta -->
 		<n-alert v-if="mensaje" type="success" closable @close="mensaje = ''">
 			{{ mensaje }}
 		</n-alert>
 
-		<!-- 2. Encapsulamiento de la Tabla en una Tarjeta -->
-		<n-card title="Inventario de Equipos" :bordered="false" class="data-card">
-			<n-data-table :columns="columns" :data="equipos" :row-key="rowKey" :loading="cargando"
-				:pagination="{ pageSize: 10 }" responsive />
+		<n-card title="Inventario de Equipos" :bordered="true" class="data-card">
+			<n-data-table
+				:columns="columns"
+				:data="equipos"
+				:row-key="rowKey"
+				:loading="cargando"
+				:pagination="{ pageSize: 10 }"
+				responsive
+			/>
 		</n-card>
 
-		<!-- Modal para Agregar Equipo (Mejorado) -->
-		<n-modal v-model:show="mostrarModal" preset="card" style="width: 600px" title="Agregar Nuevo Equipo"
-			:bordered="false" size="huge" role="dialog" aria-modal="true">
-			<n-spin :show="cargandoForm">
-				<n-form @submit.prevent="agregarEquipo">
-					<n-grid :x-gap="24" :y-gap="24" :cols="1">
-						<n-gi>
-							<n-form-item label="Tipo de equipo" required>
-								<n-input v-model:value="nuevoEquipo.tipo_equipo" placeholder="Ej: Notebook" />
-							</n-form-item>
-						</n-gi>
-						<n-gi>
-							<n-form-item label="Modelo" required>
-								<n-input v-model:value="nuevoEquipo.modelo" placeholder="Ej: HP ProBook 450 G6" />
-							</n-form-item>
-						</n-gi>
-						<n-gi>
-							<n-form-item label="Número de serie">
-								<n-input v-model:value="nuevoEquipo.num_serie" placeholder="Ej: SN123456" />
-							</n-form-item>
-						</n-gi>
-						<n-gi>
-							<n-form-item label="Número de inventario">
-								<n-input v-model:value="nuevoEquipo.num_inventario" placeholder="Ej: INV-001" />
-							</n-form-item>
-						</n-gi>
-						<n-gi>
-							<n-form-item label="Departamento">
-								<n-input v-model:value="nuevoEquipo.departamento" placeholder="Ej: IT" />
-							</n-form-item>
-						</n-gi>
-					</n-grid>
-					<!-- 5. Acciones del Modal Agrupadas -->
-					<n-space justify="end" style="margin-top: 24px">
-						<n-button @click="mostrarModal = false">Cancelar</n-button>
-						<n-button type="primary" attr-type="submit" :loading="cargandoForm">
-							Guardar Equipo
-						</n-button>
-					</n-space>
-				</n-form>
-			</n-spin>
-		</n-modal>
+		<EquipoAddModal
+			:show="mostrarModalAgregar"
+			@update:show="mostrarModalAgregar = $event"
+			@equipoAgregado="handleEquipoAgregado"
+		/>
+		<EquipoEditModal
+			v-if="equipoSeleccionado"
+			:show="mostrarModalEditar"
+			:equipo="equipoSeleccionado"
+			@update:show="mostrarModalEditar = $event"
+			@equipoActualizado="handleEquipoActualizado"
+		/>
+		<EquipoReasignarModal
+			v-if="equipoSeleccionado"
+			:show="mostrarModalReasignar"
+			:equipo="equipoSeleccionado"
+			@update:show="mostrarModalReasignar = $event"
+			@equipoActualizado="handleEquipoActualizado"
+		/>
 	</n-space>
 </template>
 
 <script setup lang="ts">
-import { ref, h, onMounted, reactive } from 'vue'
+import { ref, h, onMounted, type Component } from 'vue'
 import {
 	NAlert,
 	NSpace,
 	NButton,
-	NModal,
 	NCard,
 	NDataTable,
 	useMessage,
-	NForm,
-	NFormItem,
-	NInput,
-	NSpin,
 	NPageHeader,
-	NGrid,
-	NGi,
 	NIcon,
+	NTooltip,
+	type DataTableColumns,
+	NTime,
 } from 'naive-ui'
-import { Add as AddIcon } from '@vicons/ionicons5'
+import { Add as AddIcon, Archive, Pencil, SwapHorizontal } from '@vicons/ionicons5'
 import { supabase } from '../lib/supabaseClient'
 import type { Equipo } from '../types/equipo'
+import EquipoAddModal from '../components/EquipoAddModal.vue'
+import EquipoEditModal from '../components/EquipoEditModal.vue'
+import EquipoReasignarModal from '../components/EquipoReasignarModal.vue'
 
 // --- Iconos ---
 const renderIconAdd = () => h(NIcon, null, { default: () => h(AddIcon) })
 
 // --- Estado y Lógica General ---
 const mensaje = ref('')
-const mostrarModal = ref(false)
 const message = useMessage()
+
+// --- Estado de los Modales ---
+const mostrarModalAgregar = ref(false)
+const mostrarModalEditar = ref(false)
+const mostrarModalReasignar = ref(false)
+const equipoSeleccionado = ref<Equipo | null>(null)
 
 // --- Lógica de Lista de Equipos ---
 const equipos = ref<Equipo[]>([])
@@ -107,7 +90,7 @@ const rowKey = (row: Equipo) => row.id!
 
 const fetchData = async () => {
 	cargando.value = true
-	const { data, error } = await supabase.from('Equipos').select('*').eq('estado', 'Activo')
+	const { data, error } = await supabase.from('equipos').select('*').eq('estado', 'Activo')
 	if (error) {
 		console.error('Error fetching equipos:', error)
 		message.error('No se pudieron cargar los equipos')
@@ -118,10 +101,7 @@ const fetchData = async () => {
 }
 
 const darDeBaja = async (id: number) => {
-	const { error } = await supabase
-		.from('Equipos')
-		.update({ estado: 'Inactivo', fecha_baja: new Date().toISOString() })
-		.eq('id', id)
+	const { error } = await supabase.from('equipos').update({ estado: 'Inactivo' }).eq('id', id)
 	if (error) {
 		console.error('Error al dar de baja el equipo:', error)
 		message.error('Falló la baja del equipo')
@@ -131,62 +111,101 @@ const darDeBaja = async (id: number) => {
 	}
 }
 
-const columns = [
+// --- Funciones para abrir los modales ---
+const abrirModalEditar = (equipo: Equipo) => {
+	equipoSeleccionado.value = equipo
+	mostrarModalEditar.value = true
+}
+
+const abrirModalReasignar = (equipo: Equipo) => {
+	equipoSeleccionado.value = equipo
+	mostrarModalReasignar.value = true
+}
+
+const columns: DataTableColumns<Equipo> = [
+	{
+		title: 'Fecha de Ingreso',
+		key: 'fecha_ingreso',
+		resizable: true,
+		render(row: Equipo) {
+			if (row.fecha_ingreso) {
+				return h(NTime, {
+					time: new Date(row.fecha_ingreso),
+					type: 'relative',
+				})
+			}
+			return 'N/A'
+		},
+	},
 	{ title: 'Tipo de Equipo', key: 'tipo_equipo', resizable: true },
 	{ title: 'Modelo', key: 'modelo', resizable: true },
-	{ title: 'N° Serie', key: 'num_serie', resizable: true },
-	{ title: 'N° Inventario', key: 'num_inventario', resizable: true },
+	{ title: 'Dirección', key: 'direccion', resizable: true },
 	{ title: 'Departamento', key: 'departamento', resizable: true },
+	{ title: 'Unidad', key: 'unidad', resizable: true },
+	{ title: 'Responsable', key: 'responsable', resizable: true },
 	{
 		title: 'Acciones',
 		key: 'acciones',
-		render: (row: Equipo) =>
-			h(
-				NButton,
-				{ strong: true, tertiary: true, size: 'small', type: 'error', onClick: () => darDeBaja(row.id!) },
-				{ default: () => 'Dar de baja' },
-			),
+		align: 'center',
+		render(row: Equipo) {
+			const renderTooltipButton = (
+				tooltipText: string,
+				icon: Component,
+				onClick: () => void,
+				type: 'default' | 'error' | 'primary' | 'info' | 'success' | 'warning' = 'default',
+			) => {
+				return h(
+					NTooltip,
+					{ trigger: 'hover' },
+					{
+						trigger: () =>
+							h(
+								NButton,
+								{
+									strong: true,
+									tertiary: true,
+									circle: true, // Lo ponemos circular pa' que se vea más pro
+									type: type,
+									onClick: onClick,
+								},
+								{ default: () => h(NIcon, null, { default: () => h(icon) }) },
+							),
+						default: () => tooltipText,
+					},
+				)
+			}
+
+			return h(
+				NSpace,
+				{ justify: 'center' },
+				{
+					default: () => [
+						renderTooltipButton('Editar campos', Pencil, () => abrirModalEditar(row), 'info'),
+						renderTooltipButton(
+							'Reasignar',
+							SwapHorizontal,
+							() => abrirModalReasignar(row),
+							'primary',
+						),
+						renderTooltipButton('Dar de Baja', Archive, () => darDeBaja(row.id!), 'error'),
+					],
+				},
+			)
+		},
 	},
 ]
 
 onMounted(fetchData)
 
-// --- Lógica de Agregar Equipo ---
-const cargandoForm = ref(false)
-const nuevoEquipo = reactive<Partial<Equipo>>({
-	tipo_equipo: '',
-	modelo: '',
-	num_serie: '',
-	num_inventario: '',
-	departamento: '',
-	estado: 'Activo',
-})
-
-const resetForm = () => {
-	Object.assign(nuevoEquipo, {
-		tipo_equipo: '',
-		modelo: '',
-		num_serie: '',
-		num_inventario: '',
-		departamento: '',
-		estado: 'Activo',
-	})
+// --- Lógica de los Modales ---
+const handleEquipoAgregado = (msg: string) => {
+	mensaje.value = msg
+	fetchData()
 }
 
-const agregarEquipo = async () => {
-	cargandoForm.value = true
-	const { data, error } = await supabase.from('Equipos').insert([nuevoEquipo]).select()
-	cargandoForm.value = false
-
-	if (error) {
-		console.error('Error al agregar equipo:', error.message)
-		message.error('Error al agregar el equipo')
-	} else if (data && data.length > 0) {
-		mostrarModal.value = false
-		mensaje.value = '¡Equipo agregado con éxito!'
-		fetchData()
-		resetForm()
-	}
+const handleEquipoActualizado = () => {
+	fetchData()
+	equipoSeleccionado.value = null // Limpiamos la selección
 }
 </script>
 

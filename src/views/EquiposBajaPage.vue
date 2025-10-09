@@ -9,8 +9,14 @@
 
 		<!-- 2. Encapsulamiento en Tarjeta -->
 		<n-card title="Registro Histórico" :bordered="false" class="data-card">
-			<n-data-table :columns="columns" :data="equiposBaja" :row-key="rowKey" :loading="cargando"
-				:pagination="pagination" responsive />
+			<n-data-table
+				:columns="columns"
+				:data="equiposBaja"
+				:row-key="rowKey"
+				:loading="cargando"
+				:pagination="pagination"
+				responsive
+			/>
 		</n-card>
 	</n-space>
 </template>
@@ -27,17 +33,18 @@ const pagination = { pageSize: 10 }
 const rowKey = (row: Equipo) => row.id!
 
 const columns = [
-	{ title: 'Fecha de Baja', key: 'fecha_baja', width: 150, resizable: true },
 	{ title: 'Tipo de Equipo', key: 'tipo_equipo', resizable: true },
 	{ title: 'Modelo', key: 'modelo', resizable: true },
-	{ title: 'N° Serie', key: 'num_serie', resizable: true },
 	{ title: 'N° Inventario', key: 'num_inventario', resizable: true },
+	{ title: 'Última Dirección', key: 'direccion', resizable: true },
 	{ title: 'Último Depto.', key: 'departamento', resizable: true },
+	{ title: 'Última Unidad', key: 'unidad', resizable: true },
+	{ title: 'Último Responsable', key: 'responsable', resizable: true },
 ]
 
 const fetchEquiposBaja = async () => {
 	cargando.value = true
-	const { data, error } = await supabase.from('Equipos').select('*').eq('estado', 'Inactivo')
+	const { data, error } = await supabase.from('equipos').select('*').eq('estado', 'Inactivo')
 
 	if (error) {
 		console.error('Error fetching equipos dados de baja:', error)
@@ -51,7 +58,6 @@ onMounted(fetchEquiposBaja)
 </script>
 
 <style scoped>
-/* 3. Estilos Consistentes */
 .page-title {
 	font-size: 2rem;
 	font-weight: 600;
