@@ -236,7 +236,7 @@ const agregarEquipo = async () => {
 		message.error('Error al agregar el equipo')
 	} else if (data && data.length > 0) {
 		emit('update:show', false)
-		emit('equipoAgregado', '¡Equipo agregado con éxito!')
+		message.success('Equipo agregado con éxito.')
 		resetForm()
 	}
 }

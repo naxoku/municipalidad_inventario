@@ -1,25 +1,31 @@
 <template>
-	<n-layout-sider
-		bordered
-		show-trigger
-		collapse-mode="width"
-		:collapsed-width="64"
-		:width="240"
-		:collapsed="collapsed"
-		@collapse="$emit('update:collapsed', true)"
-		@expand="$emit('update:collapsed', false)"
-	>
-		<div class="logo-container">
-			<img :src="logoSrc" alt="Logo Municipalidad" />
-		</div>
-		<n-menu
-			v-model:value="activeKey"
-			:options="menuOptions"
-			:collapsed="collapsed"
+	<div class="app-sidebar-wrapper">
+		<n-layout-sider
+			bordered
+			show-trigger
+			collapse-mode="width"
 			:collapsed-width="64"
-			:collapsed-icon-size="22"
-		/>
-	</n-layout-sider>
+			:width="240"
+			:collapsed="collapsed"
+			@collapse="$emit('update:collapsed', true)"
+			@expand="$emit('update:collapsed', false)"
+			class="app-sidebar-layout"
+		>
+			<div class="logo-container">
+				<img :src="logoSrc" alt="Logo Municipalidad" />
+			</div>
+			<n-menu
+				v-model:value="activeKey"
+				:options="menuOptions"
+				:collapsed="collapsed"
+				:collapsed-width="64"
+				:collapsed-icon-size="22"
+			/>
+		</n-layout-sider>
+		<div class="header-content">
+			<ThemeSwitcher />
+		</div>
+	</div>
 </template>
 
 <!-- <script setup lang="ts"> -->
@@ -30,6 +36,7 @@ import { NLayoutSider, NMenu, NIcon } from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
 import { DesktopOutline, ArchiveOutline } from '@vicons/ionicons5'
 import { useThemeStore } from '../stores/theme'
+import ThemeSwitcher from './ThemeSwitcher.vue'
 
 // --- IMÁGENES ---
 import logoNegro from '../assets/municipalidad-de-Angol-negro.jpg'
@@ -80,12 +87,12 @@ const menuOptions: MenuOption[] = [
 				RouterLink,
 				{
 					to: {
-						name: 'equipos-historial',
+						name: 'equipos-mantenimiento',
 					},
 				},
-				{ default: () => 'Historial de equipos' },
+				{ default: () => 'Historial de mantenimiento' },
 			),
-		key: 'equipos-historial',
+		key: 'equipos-mantenimiento',
 		icon: () => h(NIcon, null, { default: () => h(DesktopOutline) }),
 	},
 ]
@@ -103,6 +110,16 @@ watch(
 </script>
 
 <style scoped>
+.app-sidebar-wrapper {
+	display: flex;
+	flex-direction: column;
+	height: 100%; /* Asegura que el wrapper ocupe toda la altura disponible */
+}
+
+.app-sidebar-layout {
+	flex-grow: 1; /* Permite que el sider ocupe el espacio restante */
+}
+
 .logo-container {
 	display: flex;
 	align-items: center;
@@ -115,5 +132,15 @@ watch(
 	max-width: 100%;
 	max-height: 100%;
 	object-fit: contain;
+}
+
+.header-content {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+	border-top: 1px solid var(--n-border-color);
+	/* Asegura que el ThemeSwitcher se mantenga en la parte inferior */
+	margin-top: auto;
 }
 </style>

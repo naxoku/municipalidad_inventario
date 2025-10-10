@@ -28,9 +28,9 @@ const router = createRouter({
 			component: EquiposDepartamentos, // La página para ver los equipos de cada departamento
 		},
 		{
-			path: '/equipos-historial/',
-			name: 'equipos-historial',
-			component: EquiposHistorial, // La página para ver los equipos de cada departamento
+			path: '/equipos-mantenimiento/',
+			name: 'equipos-mantenimiento',
+			component: EquiposHistorial, // La página para ingresar un mantenimiento de equipo
 		},
 	],
 })

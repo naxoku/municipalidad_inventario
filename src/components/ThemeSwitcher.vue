@@ -12,11 +12,3 @@ import { useThemeStore } from '../stores/theme'
 
 const themeStore = useThemeStore()
 </script>
-
-<style scoped>
-/* Un pequeño ajuste para que el ícono se vea bien centrado */
-.n-switch {
-	display: inline-flex;
-	align-items: center;
-}
-</style>
