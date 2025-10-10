@@ -57,7 +57,7 @@
 									filterable
 								/>
 							</n-form-item>
-							<n-form-item label="Responsable">
+							<n-form-item label="Responsable del equipo">
 								<n-input v-model:value="nuevoEquipo.responsable" placeholder="Ej: Juan Pérez" />
 							</n-form-item>
 						</n-space>
@@ -69,8 +69,16 @@
 						<n-space v-if="camposEspecificos!.length > 0" vertical>
 							<n-form-item v-for="campo in camposEspecificos" :key="campo.key" :label="campo.label">
 								<n-input
+									v-if="campo.type === 'input'"
 									v-model:value="nuevoEquipo.detalles[campo.key]"
 									:placeholder="campo.placeholder"
+								/>
+								<n-select
+									v-else-if="campo.type === 'select'"
+									v-model:value="nuevoEquipo.detalles[campo.key]"
+									:placeholder="campo.placeholder"
+									:options="campo.options?.map((opt) => ({ label: opt, value: opt }))"
+									filterable
 								/>
 							</n-form-item>
 						</n-space>
@@ -159,6 +167,13 @@ const opcionesUnidades = computed(() => {
 	return []
 })
 
+const camposEspecificos = computed(() => {
+	if (nuevoEquipo.tipo_equipo && especificacionesPorEquipo[nuevoEquipo.tipo_equipo]) {
+		return especificacionesPorEquipo[nuevoEquipo.tipo_equipo]
+	}
+	return []
+})
+
 watch(
 	() => nuevoEquipo.direccion,
 	() => {
@@ -173,13 +188,6 @@ watch(
 		nuevoEquipo.unidad = ''
 	},
 )
-
-const camposEspecificos = computed(() => {
-	if (nuevoEquipo.tipo_equipo && especificacionesPorEquipo[nuevoEquipo.tipo_equipo]) {
-		return especificacionesPorEquipo[nuevoEquipo.tipo_equipo]
-	}
-	return []
-})
 
 watch(
 	() => nuevoEquipo.tipo_equipo,

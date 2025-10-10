@@ -67,13 +67,10 @@ const menuOptions: MenuOption[] = [
 			h(
 				RouterLink,
 				{
-					to: {
-						name: 'equipos-departamentos',
-					},
+					to: { name: 'equipos-departamentos' },
 				},
 				{ default: () => 'Departamentos' },
 			),
-		// También es buena idea que la 'key' sea la misma que el nombre de la ruta
 		key: 'equipos-departamentos',
 		icon: () => h(NIcon, null, { default: () => h(DesktopOutline) }),
 	},
@@ -83,12 +80,12 @@ const menuOptions: MenuOption[] = [
 				RouterLink,
 				{
 					to: {
-						name: 'equipos-detalles',
+						name: 'equipos-historial',
 					},
 				},
-				{ default: () => 'Agregar detalle' },
+				{ default: () => 'Historial de equipos' },
 			),
-		key: 'equipos-detalles',
+		key: 'equipos-historial',
 		icon: () => h(NIcon, null, { default: () => h(DesktopOutline) }),
 	},
 ]

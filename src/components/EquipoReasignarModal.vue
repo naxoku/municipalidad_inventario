@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, nextTick } from 'vue' // <-- Importamos nextTick
 import {
 	NModal,
 	NSpin,
@@ -72,14 +72,20 @@ const message = useMessage()
 const cargando = ref(false)
 const formValue = ref<Partial<Equipo>>({})
 
+// Para controlar la carga de datos
+const isLoading = ref(false)
+
 watch(
 	() => props.equipo,
-	(newEquipo) => {
+	async (newEquipo) => {
 		if (newEquipo) {
-			formValue.value = { ...newEquipo }
+			isLoading.value = true
+			formValue.value = JSON.parse(JSON.stringify(newEquipo))
+			await nextTick()
+			isLoading.value = false
 		}
 	},
-	{ immediate: true },
+	{ immediate: true, deep: true },
 )
 
 const opcionesDepartamentos = computed(() => {
@@ -108,19 +114,20 @@ const opcionesUnidades = computed(() => {
 	return []
 })
 
-// --- FIN DEL ARREGLO ---
-
 watch(
 	() => formValue.value.direccion,
 	() => {
-		formValue.value.departamento = ''
-		formValue.value.unidad = ''
+		if (isLoading.value) return
+		formValue.value.departamento = undefined
+		formValue.value.unidad = undefined
 	},
 )
+
 watch(
 	() => formValue.value.departamento,
 	() => {
-		formValue.value.unidad = ''
+		if (isLoading.value) return
+		formValue.value.unidad = undefined
 	},
 )
 
@@ -132,6 +139,9 @@ const guardarCambios = async () => {
 	if (opcionesUnidades.value.length > 0 && !formValue.value.unidad) {
 		message.error('Debes seleccionar una Unidad para este Departamento.')
 		return
+	}
+	if (opcionesUnidades.value.length === 0) {
+		formValue.value.unidad = undefined
 	}
 
 	cargando.value = true
