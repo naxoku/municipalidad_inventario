@@ -2,7 +2,7 @@
 	<n-modal
 		v-model:show="mostrarModal"
 		preset="card"
-		style="width: 900px"
+		style="width: 1000px"
 		title="Agregar Nuevo Equipo"
 		:bordered="false"
 		size="huge"
@@ -39,7 +39,10 @@
 									filterable
 								/>
 							</n-form-item>
-							<n-form-item label="Departamento / Oficina" required>
+							<n-form-item
+								label="Departamento / Oficina"
+								:required="!!nuevoEquipo.direccion && opcionesDepartamentos.length > 0"
+							>
 								<n-select
 									v-model:value="nuevoEquipo.departamento"
 									placeholder="Selecciona un departamento"
@@ -48,7 +51,10 @@
 									filterable
 								/>
 							</n-form-item>
-							<n-form-item label="Unidad Específica">
+							<n-form-item
+								label="Unidad Específica"
+								:required="!!nuevoEquipo.departamento && opcionesUnidades.length > 0"
+							>
 								<n-select
 									v-model:value="nuevoEquipo.unidad"
 									placeholder="Selecciona una unidad"
@@ -126,7 +132,15 @@ import {
 const message = useMessage()
 const props = defineProps<{ show: boolean }>()
 const emit = defineEmits(['update:show', 'equipoAgregado'])
-const mostrarModal = computed({ get: () => props.show, set: (value) => emit('update:show', value) })
+const mostrarModal = computed({
+	get: () => props.show,
+	set: (value) => {
+		emit('update:show', value)
+		if (!value) {
+			resetForm()
+		}
+	},
+})
 const cargandoForm = ref(false)
 
 const nuevoEquipo = reactive<Partial<Equipo> & { detalles: { [key: string]: string } }>({

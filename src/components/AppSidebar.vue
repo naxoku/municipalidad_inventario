@@ -28,13 +28,12 @@
 	</div>
 </template>
 
-<!-- <script setup lang="ts"> -->
 <script setup lang="ts">
 import { h, ref, watch, computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { NLayoutSider, NMenu, NIcon } from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
-import { DesktopOutline, ArchiveOutline } from '@vicons/ionicons5'
+import { ArchiveOutline, BusinessOutline, CreateOutline } from '@vicons/ionicons5'
 import { useThemeStore } from '../stores/theme'
 import ThemeSwitcher from './ThemeSwitcher.vue'
 
@@ -59,43 +58,38 @@ const logoSrc = computed(() => {
 // Opciones del menú
 const menuOptions: MenuOption[] = [
 	{
-		label: () => h(RouterLink, { to: { name: 'equipos' } }, { default: () => 'Equipos' }),
-		key: 'equipos',
-		icon: () => h(NIcon, null, { default: () => h(DesktopOutline) }),
+		label: 'Gestión',
+		key: 'gestion-group',
+		type: 'group',
+		children: [
+			{
+				label: () => h(RouterLink, { to: { name: 'equipos' } }, { default: () => 'Inventario' }),
+				key: 'equipos',
+				icon: () => h(NIcon, null, { default: () => h(CreateOutline) }),
+			},
+		],
 	},
 	{
-		label: () =>
-			h(RouterLink, { to: { name: 'equipos-baja' } }, { default: () => 'Equipos de Baja' }),
-		key: 'equipos-baja',
-		icon: () => h(NIcon, null, { default: () => h(ArchiveOutline) }),
-	},
-	{
-		label: () =>
-			h(
-				RouterLink,
-				{
-					to: { name: 'equipos-departamentos' },
-				},
-				{ default: () => 'Departamentos' },
-			),
-		key: 'equipos-departamentos',
-		icon: () => h(NIcon, null, { default: () => h(DesktopOutline) }),
-	},
-	{
-		label: () =>
-			h(
-				RouterLink,
-				{
-					to: {
-						name: 'equipos-mantenimiento',
-					},
-				},
-				{ default: () => 'Historial de mantenimiento' },
-			),
-		key: 'equipos-mantenimiento',
-		icon: () => h(NIcon, null, { default: () => h(DesktopOutline) }),
+		label: 'Consultas',
+		key: 'consultas-group',
+		type: 'group',
+		children: [
+			{
+				label: () =>
+					h(RouterLink, { to: '/equipos-departamentos' }, { default: () => 'Por Departamento' }),
+				key: 'equipos-departamentos',
+				icon: () => h(NIcon, null, { default: () => h(BusinessOutline) }),
+			},
+			{
+				label: () =>
+					h(RouterLink, { to: { name: 'equipos-baja' } }, { default: () => 'Equipos Inactivos' }),
+				key: 'equipos-baja',
+				icon: () => h(NIcon, null, { default: () => h(ArchiveOutline) }),
+			},
+		],
 	},
 ]
+
 // Lógica para mantener el menú sincronizado con la ruta
 const route = useRoute()
 const activeKey = ref<string | null>(null)
@@ -113,11 +107,11 @@ watch(
 .app-sidebar-wrapper {
 	display: flex;
 	flex-direction: column;
-	height: 100%; /* Asegura que el wrapper ocupe toda la altura disponible */
+	height: 100%;
 }
 
 .app-sidebar-layout {
-	flex-grow: 1; /* Permite que el sider ocupe el espacio restante */
+	flex-grow: 1;
 }
 
 .logo-container {
@@ -140,7 +134,6 @@ watch(
 	justify-content: center;
 	padding: 1rem;
 	border-top: 1px solid var(--n-border-color);
-	/* Asegura que el ThemeSwitcher se mantenga en la parte inferior */
 	margin-top: auto;
 }
 </style>

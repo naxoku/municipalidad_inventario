@@ -1,31 +1,127 @@
 <template>
-	<n-space vertical :size="24">
-		<n-page-header>
-			<template #title>
-				<h1 class="page-title">Equipos Activos</h1>
-			</template>
-			<template #extra>
-				<n-button type="primary" @click="mostrarModalAgregar = true" :render-icon="renderIconAdd">
+	<div class="equipos-page">
+		<n-space vertical :size="24" class="page-container">
+			<!-- Header -->
+			<div class="page-header">
+				<div>
+					<n-h2 style="margin: 0; margin-bottom: 4px">Equipos Activos</n-h2>
+					<n-text depth="3">
+						{{ equipos.length }} equipo{{ equipos.length !== 1 ? 's' : '' }} en inventario
+					</n-text>
+				</div>
+				<n-button type="primary" size="large" @click="mostrarModalAgregar = true">
+					<template #icon>
+						<n-icon :component="AddIcon" />
+					</template>
 					Agregar Equipo
 				</n-button>
-			</template>
-		</n-page-header>
+			</div>
 
-		<n-alert v-if="mensaje" type="success" closable @close="mensaje = ''">
-			{{ mensaje }}
-		</n-alert>
+			<!-- Alerta de éxito -->
+			<n-alert v-if="mensaje" type="success" closable @close="mensaje = ''">
+				{{ mensaje }}
+			</n-alert>
 
-		<n-card title="Inventario de Equipos" :bordered="true" class="data-card">
-			<n-data-table
-				:columns="columns"
-				:data="equipos"
-				:row-key="rowKey"
-				:loading="cargando"
-				:pagination="{ pageSize: 10 }"
-				responsive
-			/>
-		</n-card>
+			<!-- Búsqueda y filtros -->
+			<n-card :bordered="false" embedded>
+				<n-space vertical :size="12">
+					<n-input
+						v-model:value="searchQuery"
+						placeholder="Buscar por modelo, tipo, serie, inventario, responsable..."
+						clearable
+						size="large"
+						:allow-input="noSideSpace"
+					>
+						<template #prefix>
+							<n-icon :component="SearchIcon" />
+						</template>
+					</n-input>
 
+					<!-- Filtros rápidos -->
+					<n-space :size="12" :wrap="true">
+						<n-select
+							v-model:value="filterTipoEquipo"
+							:options="tipoEquipoOptions"
+							placeholder="Tipo de equipo"
+							clearable
+							filterable
+							style="min-width: 200px"
+						/>
+						<n-select
+							v-model:value="filterDireccion"
+							:options="direccionOptions"
+							placeholder="Dirección"
+							clearable
+							filterable
+							style="min-width: 200px"
+						/>
+						<n-select
+							v-model:value="filterDepartamento"
+							:options="departamentoOptions"
+							placeholder="Departamento"
+							clearable
+							filterable
+							style="min-width: 200px"
+						/>
+						<n-select
+							v-model:value="filterUnidad"
+							:options="unidadOptions"
+							placeholder="Unidad"
+							clearable
+							filterable
+							style="min-width: 200px"
+						/>
+					</n-space>
+
+					<!-- Tags de filtros activos -->
+					<n-space v-if="hasActiveFilters" :size="8">
+						<n-tag v-if="filterTipoEquipo" closable @close="filterTipoEquipo = null" size="small">
+							{{ filterTipoEquipo }}
+						</n-tag>
+						<n-tag v-if="filterDireccion" closable @close="filterDireccion = null" size="small">
+							{{ filterDireccion }}
+						</n-tag>
+						<n-tag
+							v-if="filterDepartamento"
+							closable
+							@close="filterDepartamento = null"
+							size="small"
+						>
+							{{ filterDepartamento }}
+						</n-tag>
+						<n-tag v-if="filterUnidad" closable @close="filterUnidad = null" size="small">
+							{{ filterUnidad }}
+						</n-tag>
+						<n-button text type="primary" size="small" @click="clearAllFilters">
+							Limpiar todos
+						</n-button>
+					</n-space>
+				</n-space>
+			</n-card>
+
+			<!-- Tabla -->
+			<n-spin :show="cargando">
+				<n-data-table
+					:columns="columns"
+					:data="filteredEquipos"
+					:pagination="paginationConfig"
+					:bordered="false"
+					:single-line="false"
+					size="large"
+					:scroll-x="1400"
+				>
+					<template #empty>
+						<n-empty description="No se encontraron equipos" size="large">
+							<template #icon>
+								<n-icon :component="FolderOpenIcon" :size="64" :depth="3" />
+							</template>
+						</n-empty>
+					</template>
+				</n-data-table>
+			</n-spin>
+		</n-space>
+
+		<!-- Modales -->
 		<EquipoAddModal
 			:show="mostrarModalAgregar"
 			@update:show="mostrarModalAgregar = $event"
@@ -45,54 +141,173 @@
 			@update:show="mostrarModalReasignar = $event"
 			@equipoActualizado="handleEquipoActualizado"
 		/>
-	</n-space>
+		<EquipoMantenimientoModal
+			v-if="equipoSeleccionado"
+			:show="mostrarModalMantenimiento"
+			:equipo="equipoSeleccionado"
+			@update:show="mostrarModalMantenimiento = $event"
+			@equipoActualizado="handleEquipoActualizado"
+		/>
+		<EquipoBajaModal
+			v-if="equipoSeleccionado"
+			:show="mostrarModalBaja"
+			:equipo="equipoSeleccionado"
+			@update:show="mostrarModalBaja = $event"
+			@equipoDadoDeBaja="handleEquipoDadoDeBaja"
+		/>
+	</div>
 </template>
 
 <script setup lang="ts">
-import { ref, h, onMounted, type Component } from 'vue'
+import { ref, h, onMounted, computed } from 'vue'
 import {
 	NAlert,
 	NSpace,
 	NButton,
 	NCard,
 	NDataTable,
+	NTag,
 	useMessage,
-	NPageHeader,
 	NIcon,
 	NTooltip,
 	type DataTableColumns,
 	NTime,
+	NInput,
+	NSelect,
+	NSpin,
+	NEmpty,
+	NH2,
+	NText,
+	type SelectOption,
 } from 'naive-ui'
-import { Add as AddIcon, Archive, Pencil, SwapHorizontal } from '@vicons/ionicons5'
+import {
+	Add as AddIcon,
+	Archive,
+	Pencil,
+	SwapHorizontal,
+	Search as SearchIcon,
+	FolderOpen as FolderOpenIcon,
+} from '@vicons/ionicons5'
 import { supabase } from '../lib/supabaseClient'
 import type { Equipo } from '../types/equipo'
 import EquipoAddModal from '../components/EquipoAddModal.vue'
 import EquipoEditModal from '../components/EquipoEditModal.vue'
 import EquipoReasignarModal from '../components/EquipoReasignarModal.vue'
+import EquipoMantenimientoModal from '../components/EquipoMantenimientoModal.vue'
+import EquipoBajaModal from '../components/EquipoBajaModal.vue'
 
-// --- Iconos ---
-const renderIconAdd = () => h(NIcon, null, { default: () => h(AddIcon) })
-
-// --- Estado y Lógica General ---
 const mensaje = ref('')
 const message = useMessage()
 
-// --- Estado de los Modales ---
 const mostrarModalAgregar = ref(false)
 const mostrarModalEditar = ref(false)
 const mostrarModalReasignar = ref(false)
+const mostrarModalMantenimiento = ref(false)
+const mostrarModalBaja = ref(false)
 const equipoSeleccionado = ref<Equipo | null>(null)
 
-// --- Lógica de Lista de Equipos ---
 const equipos = ref<Equipo[]>([])
 const cargando = ref(false)
-const rowKey = (row: Equipo) => row.id!
+
+// Filtros
+const searchQuery = ref('')
+const filterTipoEquipo = ref<string | null>(null)
+const filterDireccion = ref<string | null>(null)
+const filterDepartamento = ref<string | null>(null)
+const filterUnidad = ref<string | null>(null)
+
+const noSideSpace = (value: string) => !value.startsWith(' ') && !value.endsWith(' ')
+
+const paginationConfig = computed(() => ({
+	pageSize: 15,
+	showSizePicker: true,
+	pageSizes: [15, 30, 50, 100],
+	showQuickJumper: true,
+}))
+
+const hasActiveFilters = computed(() => {
+	return !!(
+		filterTipoEquipo.value ||
+		filterDireccion.value ||
+		filterDepartamento.value ||
+		filterUnidad.value
+	)
+})
+
+// Opciones dinámicas
+const tipoEquipoOptions = computed<SelectOption[]>(() => {
+	const tipos = new Set(equipos.value.map((e) => e.tipo_equipo).filter(Boolean))
+	return Array.from(tipos).map((tipo) => ({ label: tipo, value: tipo }))
+})
+
+const direccionOptions = computed<SelectOption[]>(() => {
+	const direcciones = new Set(equipos.value.map((e) => e.direccion).filter(Boolean))
+	return Array.from(direcciones).map((dir) => ({ label: dir, value: dir }))
+})
+
+const departamentoOptions = computed<SelectOption[]>(() => {
+	const deptos = new Set(equipos.value.map((e) => e.departamento).filter(Boolean))
+	return Array.from(deptos).map((depto) => ({ label: depto, value: depto }))
+})
+
+const unidadOptions = computed<SelectOption[]>(() => {
+	const unidades = new Set(equipos.value.map((e) => e.unidad).filter(Boolean))
+	return Array.from(unidades).map((unidad) => ({ label: unidad, value: unidad }))
+})
+
+// Equipos filtrados
+const filteredEquipos = computed(() => {
+	let result = equipos.value
+
+	if (searchQuery.value) {
+		const query = searchQuery.value.toLowerCase().trim()
+		result = result.filter((equipo) => {
+			return (
+				equipo.modelo?.toLowerCase().includes(query) ||
+				equipo.tipo_equipo?.toLowerCase().includes(query) ||
+				equipo.num_serie?.toLowerCase().includes(query) ||
+				equipo.num_inventario?.toLowerCase().includes(query) ||
+				equipo.responsable?.toLowerCase().includes(query)
+			)
+		})
+	}
+
+	if (filterTipoEquipo.value) {
+		result = result.filter((equipo) => equipo.tipo_equipo === filterTipoEquipo.value)
+	}
+
+	if (filterDireccion.value) {
+		result = result.filter((equipo) => equipo.direccion === filterDireccion.value)
+	}
+
+	if (filterDepartamento.value) {
+		result = result.filter((equipo) => equipo.departamento === filterDepartamento.value)
+	}
+
+	if (filterUnidad.value) {
+		result = result.filter((equipo) => equipo.unidad === filterUnidad.value)
+	}
+
+	return result
+})
+
+function clearAllFilters() {
+	searchQuery.value = ''
+	filterTipoEquipo.value = null
+	filterDireccion.value = null
+	filterDepartamento.value = null
+	filterUnidad.value = null
+}
 
 const fetchData = async () => {
 	cargando.value = true
-	const { data, error } = await supabase.from('equipos').select('*').eq('estado', 'Activo')
+	const { data, error } = await supabase
+		.from('equipos')
+		.select('*')
+		.eq('estado', 'Activo')
+		.order('fecha_ingreso', { ascending: false })
+
 	if (error) {
-		console.error('Error fetching equipos:', error)
 		message.error('No se pudieron cargar los equipos')
 	} else {
 		equipos.value = data
@@ -100,18 +315,6 @@ const fetchData = async () => {
 	cargando.value = false
 }
 
-const darDeBaja = async (id: number) => {
-	const { error } = await supabase.from('equipos').update({ estado: 'Inactivo' }).eq('id', id)
-	if (error) {
-		console.error('Error al dar de baja el equipo:', error)
-		message.error('Falló la baja del equipo')
-	} else {
-		message.success('Equipo dado de baja correctamente')
-		fetchData()
-	}
-}
-
-// --- Funciones para abrir los modales ---
 const abrirModalEditar = (equipo: Equipo) => {
 	equipoSeleccionado.value = equipo
 	mostrarModalEditar.value = true
@@ -122,11 +325,22 @@ const abrirModalReasignar = (equipo: Equipo) => {
 	mostrarModalReasignar.value = true
 }
 
+const abrirModalMantenimiento = (equipo: Equipo) => {
+	equipoSeleccionado.value = equipo
+	mostrarModalMantenimiento.value = true
+}
+
+const abrirModalBaja = (equipo: Equipo) => {
+	equipoSeleccionado.value = equipo
+	mostrarModalBaja.value = true
+}
+
 const columns: DataTableColumns<Equipo> = [
 	{
-		title: 'Fecha de Ingreso',
+		title: 'Fecha',
 		key: 'fecha_ingreso',
-		resizable: true,
+		width: 120,
+		ellipsis: { tooltip: true },
 		render(row: Equipo) {
 			if (row.fecha_ingreso) {
 				return h(NTime, {
@@ -137,57 +351,139 @@ const columns: DataTableColumns<Equipo> = [
 			return 'N/A'
 		},
 	},
-	{ title: 'Tipo de Equipo', key: 'tipo_equipo', resizable: true },
-	{ title: 'Modelo', key: 'modelo', resizable: true },
-	{ title: 'Dirección', key: 'direccion', resizable: true },
-	{ title: 'Departamento', key: 'departamento', resizable: true },
-	{ title: 'Unidad', key: 'unidad', resizable: true },
-	{ title: 'Responsable', key: 'responsable', resizable: true },
+	{
+		title: 'Tipo',
+		key: 'tipo_equipo',
+		width: 140,
+		ellipsis: { tooltip: true },
+	},
+	{
+		title: 'Modelo',
+		key: 'modelo',
+		minWidth: 180,
+		ellipsis: { tooltip: true },
+		render(row: Equipo) {
+			return h(
+				NButton,
+				{
+					text: true,
+					type: 'info',
+					onClick: () => abrirModalMantenimiento(row),
+				},
+				{ default: () => row.modelo },
+			)
+		},
+	},
+	{
+		title: 'Dirección',
+		key: 'direccion',
+		width: 180,
+		ellipsis: { tooltip: true },
+		render(row: Equipo) {
+			return h(NTag, { size: 'small', bordered: false }, { default: () => row.direccion || 'N/A' })
+		},
+	},
+	{
+		title: 'Departamento',
+		key: 'departamento',
+		width: 180,
+		ellipsis: { tooltip: true },
+		render(row: Equipo) {
+			return h(
+				NTag,
+				{ size: 'small', bordered: false, type: 'info' },
+				{ default: () => row.departamento || 'N/A' },
+			)
+		},
+	},
+	{
+		title: 'Unidad',
+		key: 'unidad',
+		width: 150,
+		ellipsis: { tooltip: true },
+		render(row: Equipo) {
+			return h(
+				NTag,
+				{ size: 'small', bordered: false, type: 'success' },
+				{ default: () => row.unidad || 'N/A' },
+			)
+		},
+	},
+	{
+		title: 'Responsable',
+		key: 'responsable',
+		width: 150,
+		ellipsis: { tooltip: true },
+	},
 	{
 		title: 'Acciones',
 		key: 'acciones',
+		width: 150,
 		align: 'center',
+		fixed: 'right',
 		render(row: Equipo) {
-			const renderTooltipButton = (
-				tooltipText: string,
-				icon: Component,
-				onClick: () => void,
-				type: 'default' | 'error' | 'primary' | 'info' | 'success' | 'warning' = 'default',
-			) => {
-				return h(
-					NTooltip,
-					{ trigger: 'hover' },
-					{
-						trigger: () =>
-							h(
-								NButton,
-								{
-									strong: true,
-									tertiary: true,
-									circle: true, // Lo ponemos circular pa' que se vea más pro
-									type: type,
-									onClick: onClick,
-								},
-								{ default: () => h(NIcon, null, { default: () => h(icon) }) },
-							),
-						default: () => tooltipText,
-					},
-				)
-			}
-
 			return h(
 				NSpace,
-				{ justify: 'center' },
+				{ justify: 'center', size: 4 },
 				{
 					default: () => [
-						renderTooltipButton('Editar campos', Pencil, () => abrirModalEditar(row), 'info'),
-						renderTooltipButton(
-							'Reasignar',
-							SwapHorizontal,
-							() => abrirModalReasignar(row),
-							'primary',
+						h(
+							NTooltip,
+							{},
+							{
+								trigger: () =>
+									h(
+										NButton,
+										{
+											tertiary: true,
+											circle: true,
+											type: 'info',
+											size: 'small',
+											onClick: () => abrirModalEditar(row),
+										},
+										{ icon: () => h(NIcon, { component: Pencil, size: 18 }) },
+									),
+								default: () => 'Editar',
+							},
 						),
-						renderTooltipButton('Dar de Baja', Archive, () => darDeBaja(row.id!), 'error'),
+						h(
+							NTooltip,
+							{},
+							{
+								trigger: () =>
+									h(
+										NButton,
+										{
+											tertiary: true,
+											circle: true,
+											type: 'primary',
+											size: 'small',
+											onClick: () => abrirModalReasignar(row),
+										},
+										{ icon: () => h(NIcon, { component: SwapHorizontal, size: 18 }) },
+									),
+								default: () => 'Reasignar',
+							},
+						),
+						h(
+							NTooltip,
+							{},
+							{
+								trigger: () =>
+									h(
+										NButton,
+										{
+											tertiary: true,
+											circle: true,
+											type: 'error',
+											size: 'small',
+											onClick: () => abrirModalBaja(row),
+										},
+										{ icon: () => h(NIcon, { component: Archive, size: 18 }) },
+									),
+								default: () => 'Dar de Baja',
+							},
+						),
 					],
 				},
 			)
@@ -197,7 +493,6 @@ const columns: DataTableColumns<Equipo> = [
 
 onMounted(fetchData)
 
-// --- Lógica de los Modales ---
 const handleEquipoAgregado = (msg: string) => {
 	mensaje.value = msg
 	fetchData()
@@ -205,18 +500,42 @@ const handleEquipoAgregado = (msg: string) => {
 
 const handleEquipoActualizado = () => {
 	fetchData()
-	equipoSeleccionado.value = null // Limpiamos la selección
+	equipoSeleccionado.value = null
+}
+
+const handleEquipoDadoDeBaja = () => {
+	fetchData()
+	equipoSeleccionado.value = null
 }
 </script>
 
 <style scoped>
-.page-title {
-	font-size: 2rem;
-	font-weight: 600;
-	margin: 0;
+.equipos-page {
+	min-height: 100vh;
+	padding: 24px;
 }
 
-.data-card {
-	border-radius: 12px;
+.page-container {
+	max-width: 1400px;
+	margin: 0 auto;
+}
+
+.page-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+	.equipos-page {
+		padding: 16px;
+	}
+
+	.page-header {
+		flex-direction: column;
+		align-items: stretch;
+	}
 }
 </style>

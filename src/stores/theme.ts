@@ -10,10 +10,8 @@ export const useThemeStore = defineStore('theme', () => {
 	// Esta computed property le pasa el tema correcto a Naive UI
 	const theme = computed<GlobalTheme | null>(() => (isDark.value ? darkTheme : null))
 
-	// La acción para cambiar de tema
 	function toggleTheme() {
 		isDark.value = !isDark.value
-		// Guardamos la preferencia en el navegador pa' que no se reinicie al recargar
 		localStorage.setItem('isDark', isDark.value.toString())
 	}
 

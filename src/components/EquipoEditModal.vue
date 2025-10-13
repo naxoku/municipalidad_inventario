@@ -8,7 +8,7 @@
 		size="huge"
 		role="dialog"
 		aria-modal="true"
-		@update:show="$emit('update:show', $event)"
+		@update:show="handleUpdateShow"
 	>
 		<n-spin :show="cargando">
 			<n-form @submit.prevent="guardarCambios">
@@ -106,6 +106,18 @@ watchEffect(() => {
 		tipoEquipoAnterior.value = undefined
 	}
 })
+
+const handleUpdateShow = (value: boolean) => {
+	emit('update:show', value)
+	if (!value) {
+		resetForm()
+	}
+}
+
+const resetForm = () => {
+	formValue.value = { detalles: {} }
+	tipoEquipoAnterior.value = undefined
+}
 
 watch(
 	() => formValue.value.tipo_equipo,

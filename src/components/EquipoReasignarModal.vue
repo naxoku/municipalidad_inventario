@@ -2,9 +2,13 @@
 	<n-modal
 		:show="show"
 		preset="card"
-		style="width: 600px"
-		title="Reasignar Equipo"
-		@update:show="$emit('update:show', $event)"
+		style="width: 1000px"
+		title="Reasignar equipo"
+		:bordered="false"
+		size="huge"
+		role="dialog"
+		aria-modal="true"
+		@update:show="handleUpdateShow"
 	>
 		<n-spin :show="cargando">
 			<n-form @submit.prevent="guardarCambios">
@@ -16,7 +20,7 @@
 							filterable
 						/>
 					</n-form-item>
-					<n-form-item label="Departamento / Oficina" required>
+					<n-form-item label="Departamento / Oficina">
 						<n-select
 							v-model:value="formValue.departamento"
 							:options="opcionesDepartamentos"
@@ -46,7 +50,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed, nextTick } from 'vue' // <-- Importamos nextTick
+import { ref, watch, computed, nextTick } from 'vue'
 import {
 	NModal,
 	NSpin,
@@ -72,7 +76,6 @@ const message = useMessage()
 const cargando = ref(false)
 const formValue = ref<Partial<Equipo>>({})
 
-// Para controlar la carga de datos
 const isLoading = ref(false)
 
 watch(
@@ -87,6 +90,17 @@ watch(
 	},
 	{ immediate: true, deep: true },
 )
+
+const handleUpdateShow = (value: boolean) => {
+	emit('update:show', value)
+	if (!value) {
+		resetForm()
+	}
+}
+
+const resetForm = () => {
+	formValue.value = {}
+}
 
 const opcionesDepartamentos = computed(() => {
 	if (formValue.value.direccion && organigrama[formValue.value.direccion]) {
@@ -118,8 +132,8 @@ watch(
 	() => formValue.value.direccion,
 	() => {
 		if (isLoading.value) return
-		formValue.value.departamento = undefined
-		formValue.value.unidad = undefined
+		formValue.value.departamento = null
+		formValue.value.unidad = null
 	},
 )
 
@@ -127,12 +141,16 @@ watch(
 	() => formValue.value.departamento,
 	() => {
 		if (isLoading.value) return
-		formValue.value.unidad = undefined
+		formValue.value.unidad = null
 	},
 )
 
 const guardarCambios = async () => {
-	if (!formValue.value.direccion || !formValue.value.departamento) {
+	if (!formValue.value.direccion) {
+		message.error('Dirección es obligatoria.')
+		return
+	}
+	if (!formValue.value.direccion && !formValue.value.departamento) {
 		message.error('Dirección y Departamento son obligatorios.')
 		return
 	}
@@ -140,8 +158,12 @@ const guardarCambios = async () => {
 		message.error('Debes seleccionar una Unidad para este Departamento.')
 		return
 	}
+	if (opcionesDepartamentos.value.length === 0 && opcionesUnidades.value.length === 0) {
+		formValue.value.departamento = null
+		formValue.value.unidad = null
+	}
 	if (opcionesUnidades.value.length === 0) {
-		formValue.value.unidad = undefined
+		formValue.value.unidad = null
 	}
 
 	cargando.value = true
@@ -157,7 +179,7 @@ const guardarCambios = async () => {
 	cargando.value = false
 
 	if (error) {
-		message.error('No se pudo reasignar el equipo.')
+		message.error('No se pudo reasignar el equipo: Revisar la DB.')
 	} else {
 		message.success('Equipo reasignado con éxito.')
 		emit('equipoActualizado')

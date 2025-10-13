@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import EquiposPage from '../views/EquiposPage.vue'
 import EquiposBajaPage from '../views/EquiposBajaPage.vue'
 import EquiposDepartamentos from '../views/EquiposDepartamentos.vue'
-import EquiposHistorial from '../views/EquiposHistorial.vue'
 
 const router = createRouter({
 	history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,11 +25,6 @@ const router = createRouter({
 			path: '/equipos-departamentos/',
 			name: 'equipos-departamentos',
 			component: EquiposDepartamentos, // La página para ver los equipos de cada departamento
-		},
-		{
-			path: '/equipos-mantenimiento/',
-			name: 'equipos-mantenimiento',
-			component: EquiposHistorial, // La página para ingresar un mantenimiento de equipo
 		},
 	],
 })
