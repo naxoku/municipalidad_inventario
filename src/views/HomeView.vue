@@ -60,11 +60,11 @@ const router = useRouter()
 const message = useMessage()
 const authStore = useAuthStore()
 
-// Login
+// LOGIN
 const loginEmail = ref('')
 const loginPassword = ref('')
 
-// Register
+// REGISTER
 const registerNombre = ref('')
 const registerEmail = ref('')
 const registerPassword = ref('')
@@ -86,15 +86,14 @@ const handleLogin = async () => {
 			return
 		}
 
-		// Comparar hash de contraseña
 		const validPassword = await bcrypt.compare(loginPassword.value.trim(), user.contraseña)
 		if (!validPassword) {
 			message.error('Usuario o contraseña incorrectos.')
 			return
 		}
 
-		authStore.setLoggedIn(true)
-		message.success('Sesión iniciada.')
+		authStore.login(user.nombre, user.correo)
+		message.success(`Sesión iniciada. ¡Bienvenido ${user.nombre}!`)
 		router.push({ name: 'equipos' })
 	} catch (err) {
 		message.error('Ocurrió un error inesperado.')
@@ -129,7 +128,6 @@ const handleRegister = async () => {
 			return
 		}
 
-		// Hashear la contraseña
 		const hashedPassword = await bcrypt.hash(registerPassword.value.trim(), 10)
 
 		// Insertar nuevo usuario

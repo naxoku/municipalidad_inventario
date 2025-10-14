@@ -1,32 +1,22 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { supabase } from '../lib/supabaseClient'
 
-export const useAuthStore = defineStore('auth', () => {
-	const isLoggedIn = ref(false)
-
-	// Inicializar el estado de login basado en la sesión actual de Supabase
-	supabase.auth.getSession().then(({ data }) => {
-		isLoggedIn.value = !!data.session
-	})
-
-	// Escuchar cambios en el estado de autenticación
-	supabase.auth.onAuthStateChange((_, session) => {
-		isLoggedIn.value = !!session
-	})
-
-	function setLoggedIn(value: boolean) {
-		isLoggedIn.value = value
-	}
-
-	async function logout() {
-		const { error } = await supabase.auth.signOut()
-		if (error) {
-			console.error('Error al cerrar sesión:', error.message)
-		} else {
-			isLoggedIn.value = false
-		}
-	}
-
-	return { isLoggedIn, setLoggedIn, logout }
+export const useAuthStore = defineStore('auth', {
+	state: () => ({
+		isLoggedIn: false,
+		userEmail: '', // correo del usuario logueado
+		userNombre: '', // nombre del usuario logueado
+	}),
+	actions: {
+		login(nombre: string, email: string) {
+			this.isLoggedIn = true
+			this.userNombre = nombre
+			this.userEmail = email
+		},
+		logout() {
+			this.isLoggedIn = false
+			this.userEmail = ''
+			this.userNombre = ''
+		},
+	},
+	persist: true, // ✅ mantiene sesión incluso tras F5
 })
