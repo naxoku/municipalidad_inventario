@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import HomeView from '@/views/HomeView.vue'
 import EquiposPage from '../views/EquiposPage.vue'
 import EquiposBajaPage from '../views/EquiposBajaPage.vue'
 import EquiposDepartamentos from '../views/EquiposDepartamentos.vue'
@@ -9,7 +10,7 @@ const router = createRouter({
 		{
 			path: '/',
 			name: 'home',
-			redirect: '/equipos', // Redirige al tiro a la lista de equipos
+			component: HomeView, // Login y register
 		},
 		{
 			path: '/equipos',

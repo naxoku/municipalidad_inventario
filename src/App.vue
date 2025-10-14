@@ -4,8 +4,10 @@ import { RouterView } from 'vue-router'
 import { NConfigProvider, NMessageProvider, NLayout, NGlobalStyle } from 'naive-ui'
 import AppSidebar from './components/AppSidebar.vue'
 import { useThemeStore } from './stores/theme'
+import { useAuthStore } from './stores/auth' // Importar el store de autenticación
 
 const themeStore = useThemeStore()
+const authStore = useAuthStore() // Instanciar el store de autenticación
 const collapsed = ref(false)
 
 const currentTheme = computed(() => themeStore.theme)
@@ -16,7 +18,7 @@ const currentTheme = computed(() => themeStore.theme)
 		<n-global-style />
 		<n-message-provider>
 			<n-layout has-sider style="height: 100vh">
-				<AppSidebar v-model:collapsed="collapsed" />
+				<AppSidebar v-if="authStore.isLoggedIn" v-model:collapsed="collapsed" />
 
 				<n-layout>
 					<main class="main-content">

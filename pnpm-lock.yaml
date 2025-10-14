@@ -23,6 +23,9 @@ importers:
       '@vicons/ionicons5':
         specifier: ^0.13.0
         version: 0.13.0
+      bcryptjs:
+        specifier: ^3.0.2
+        version: 3.0.2
       framer-motion:
         specifier: ^12.23.22
         version: 12.23.22(@emotion/is-prop-valid@1.4.0)(react@19.2.0)
@@ -1002,6 +1005,10 @@ packages:
 
   baseline-browser-mapping@2.8.14:
     resolution: {integrity: sha512-GM9c0cWWR8Ga7//Ves/9KRgTS8nLausCkP3CGiFLrnwA2CDUluXgaQqvrULoR2Ujrd/mz/lkX87F5BHFsNr5sQ==}
+    hasBin: true
+
+  bcryptjs@3.0.2:
+    resolution: {integrity: sha512-k38b3XOZKv60C4E2hVsXTolJWfkGRMbILBIe2IBITXciy5bOsTKot5kDrf3ZfufQtQOUN5mXceUEpU1rTl9Uog==}
     hasBin: true
 
   birpc@2.6.1:
@@ -3042,6 +3049,8 @@ snapshots:
   balanced-match@1.0.2: {}
 
   baseline-browser-mapping@2.8.14: {}
+
+  bcryptjs@3.0.2: {}
 
   birpc@2.6.1: {}
 

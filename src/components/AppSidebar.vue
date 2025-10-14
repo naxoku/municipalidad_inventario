@@ -30,15 +30,16 @@
 
 <script setup lang="ts">
 import { h, ref, watch, computed } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { NLayoutSider, NMenu, NIcon } from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
-import { ArchiveOutline, BusinessOutline, CreateOutline } from '@vicons/ionicons5'
+import { ArchiveOutline, BusinessOutline, CreateOutline, LogOutOutline } from '@vicons/ionicons5'
 import { useThemeStore } from '../stores/theme'
+import { useAuthStore } from '../stores/auth' // Importar el store de autenticación
 import ThemeSwitcher from './ThemeSwitcher.vue'
 
 // --- IMÁGENES ---
-import logoNegro from '../assets/municipalidad-de-Angol-negro.jpg'
+import logoNegro from '../assets/municipalidad-de-Angol-negro.png'
 import logoBlanco from '../assets/municipalidad-de-Angol-blanco.png'
 
 // Props y Emits para el control v-model
@@ -50,10 +51,18 @@ defineEmits(['update:collapsed'])
 
 // --- LÓGICA DEL TEMA ---
 const themeStore = useThemeStore()
+const authStore = useAuthStore() // Instanciar el store de autenticación
+const router = useRouter() // Instanciar el router
 
 const logoSrc = computed(() => {
 	return themeStore.isDark ? logoBlanco : logoNegro
 })
+
+// Función para cerrar sesión
+const handleLogout = async () => {
+	await authStore.logout()
+	router.push({ name: 'home' }) // Redirigir a la página de inicio
+}
 
 // Opciones del menú
 const menuOptions: MenuOption[] = [
@@ -87,6 +96,11 @@ const menuOptions: MenuOption[] = [
 				icon: () => h(NIcon, null, { default: () => h(ArchiveOutline) }),
 			},
 		],
+	},
+	{
+		label: () => h('a', { onClick: handleLogout }, 'Cerrar Sesión'),
+		key: 'logout',
+		icon: () => h(NIcon, null, { default: () => h(LogOutOutline) }),
 	},
 ]
 

@@ -257,17 +257,17 @@ const emptyIcon = computed(() => {
 // Opciones dinámicas
 const tipoEquipoOptions = computed<SelectOption[]>(() => {
 	const tipos = new Set(equipos.value.map((e) => e.tipo_equipo).filter(Boolean))
-	return Array.from(tipos).map((tipo) => ({ label: tipo, value: tipo }))
+	return Array.from(tipos).map((tipo) => ({ label: tipo as string, value: tipo as string }))
 })
 
 const direccionOptions = computed<SelectOption[]>(() => {
 	const direcciones = new Set(equipos.value.map((e) => e.direccion).filter(Boolean))
-	return Array.from(direcciones).map((dir) => ({ label: dir, value: dir }))
+	return Array.from(direcciones).map((dir) => ({ label: dir as string, value: dir as string }))
 })
 
 const departamentoOptions = computed<SelectOption[]>(() => {
 	const deptos = new Set(equipos.value.map((e) => e.departamento).filter(Boolean))
-	return Array.from(deptos).map((depto) => ({ label: depto, value: depto }))
+	return Array.from(deptos).map((depto) => ({ label: depto as string, value: depto as string }))
 })
 
 // Equipos filtrados
