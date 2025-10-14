@@ -26,6 +26,7 @@
 						<n-input
 							v-model:value="formValue.encargado_baja"
 							placeholder="Nombre del funcionario que gestiona la baja"
+							disabled
 						/>
 					</n-form-item>
 					<n-form-item label="Motivo de la baja" path="motivo_baja">
@@ -62,6 +63,7 @@ import {
 } from 'naive-ui'
 import { supabase } from '../lib/supabaseClient'
 import type { Equipo } from '../types/equipo'
+import { useAuthStore } from '@/stores/auth' // Importar el store de autenticación
 
 const props = defineProps<{
 	show: boolean
@@ -70,17 +72,16 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:show', 'equipoDadoDeBaja'])
 const message = useMessage()
+const authStore = useAuthStore() // Usar el store de autenticación
 const cargando = ref(false)
 const formRef = ref<FormInst | null>(null)
 
-// Objeto reactivo para el formulario
 const formValue = reactive({
 	fecha_baja: Date.now(),
 	motivo_baja: '',
-	encargado_baja: '',
+	encargado_baja: authStore.userNombre, // Inicializar con el nombre del usuario logueado
 })
 
-// Reglas de validación
 const rules: FormRules = {
 	motivo_baja: {
 		required: true,
@@ -88,13 +89,12 @@ const rules: FormRules = {
 		trigger: ['input', 'blur'],
 	},
 	encargado_baja: {
-		required: true,
+		required: false,
 		message: 'El encargado es obligatorio.',
 		trigger: ['input', 'blur'],
 	},
 }
 
-// Limpia el formulario cuando el modal se cierra
 watch(
 	() => props.show,
 	(isVisible) => {
@@ -102,17 +102,17 @@ watch(
 			resetForm()
 		} else {
 			formValue.fecha_baja = Date.now()
+			formValue.encargado_baja = authStore.userNombre // Autocompletar al abrir el modal
 		}
 	},
 )
 
 function resetForm() {
 	formValue.motivo_baja = ''
-	formValue.encargado_baja = ''
+	formValue.encargado_baja = authStore.userNombre // Resetear también el encargado de baja
 	formRef.value?.restoreValidation()
 }
 
-// Función para mandar el equipo a la B
 const handleDarDeBaja = async () => {
 	try {
 		await formRef.value?.validate()

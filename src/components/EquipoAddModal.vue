@@ -66,6 +66,13 @@
 							<n-form-item label="Responsable del equipo">
 								<n-input v-model:value="nuevoEquipo.responsable" placeholder="Ej: Juan Pérez" />
 							</n-form-item>
+							<n-form-item label="Encargado de registro">
+								<n-input
+									v-model:value="nuevoEquipo.encargado_registro"
+									placeholder="Nombre del encargado"
+									disabled
+								/>
+							</n-form-item>
 						</n-space>
 					</n-gi>
 
@@ -128,8 +135,10 @@ import {
 	opcionesTiposDeEquipo,
 	especificacionesPorEquipo,
 } from '@/data/listas'
+import { useAuthStore } from '@/stores/auth' // Importar el store de autenticación
 
 const message = useMessage()
+const authStore = useAuthStore() // Usar el store de autenticación
 const props = defineProps<{ show: boolean }>()
 const emit = defineEmits(['update:show', 'equipoAgregado'])
 const mostrarModal = computed({
@@ -138,12 +147,17 @@ const mostrarModal = computed({
 		emit('update:show', value)
 		if (!value) {
 			resetForm()
+		} else {
+			// Autocompletar el encargado de registro al abrir el modal
+			nuevoEquipo.encargado_registro = authStore.userNombre
 		}
 	},
 })
 const cargandoForm = ref(false)
 
-const nuevoEquipo = reactive<Partial<Equipo> & { detalles: { [key: string]: string } }>({
+const nuevoEquipo = reactive<
+	Partial<Equipo> & { detalles: { [key: string]: string }; encargado_registro: string }
+>({
 	tipo_equipo: null,
 	modelo: '',
 	num_serie: '',
@@ -154,6 +168,7 @@ const nuevoEquipo = reactive<Partial<Equipo> & { detalles: { [key: string]: stri
 	responsable: '',
 	estado: 'Activo',
 	detalles: {},
+	encargado_registro: authStore.userNombre, // Inicializar con el nombre del usuario logueado
 })
 
 const opcionesDepartamentos = computed(() => {
@@ -222,6 +237,7 @@ const resetForm = () => {
 		responsable: '',
 		estado: 'Activo',
 		detalles: {},
+		encargado_registro: authStore.userNombre, // Resetear también el encargado de registro
 	})
 }
 
@@ -230,7 +246,8 @@ const agregarEquipo = async () => {
 		!nuevoEquipo.tipo_equipo ||
 		!nuevoEquipo.modelo ||
 		!nuevoEquipo.direccion ||
-		!nuevoEquipo.departamento
+		!nuevoEquipo.departamento ||
+		!nuevoEquipo.encargado_registro // Validar el nuevo campo
 	) {
 		message.error('Por favor, completa los campos obligatorios.')
 		return

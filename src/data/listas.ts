@@ -223,12 +223,6 @@ export const especificacionesPorEquipo: {
 			options: ['10/100 Mbps', '1 Gbps', '10 Gbps'],
 		},
 		{
-			key: 'direccion_mac',
-			label: 'Dirección MAC',
-			placeholder: 'Ej: 00:1A:2B:3C:4D:5E',
-			type: 'input',
-		},
-		{
 			key: 'es_poe',
 			label: '¿Es PoE?',
 			placeholder: '¿Soporta PoE?',

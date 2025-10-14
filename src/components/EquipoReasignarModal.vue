@@ -39,6 +39,17 @@
 					<n-form-item label="Responsable">
 						<n-input v-model:value="formValue.responsable" placeholder="Ej: Juan Pérez" />
 					</n-form-item>
+					<n-form-item label="Ordenado por">
+						<n-input :value="encargadoReasignacion" :disabled="true" />
+					</n-form-item>
+					<n-form-item label="Motivo de la reasignación">
+						<n-input
+							v-model:value="formValue.motivo_reasignacion"
+							type="textarea"
+							placeholder="Ej: Reorganización departamental, cambio de responsable..."
+							:rows="3"
+						/>
+					</n-form-item>
 				</n-space>
 				<n-space justify="end" style="margin-top: 24px">
 					<n-button @click="$emit('update:show', false)">Cancelar</n-button>
@@ -65,6 +76,7 @@ import {
 import { supabase } from '../lib/supabaseClient'
 import type { Equipo } from '../types/equipo'
 import { organigrama, opcionesDirecciones } from '@/data/listas'
+import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{
 	show: boolean
@@ -73,8 +85,12 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:show', 'equipoActualizado'])
 const message = useMessage()
+const authStore = useAuthStore()
+const encargadoReasignacion = computed(() => authStore.userNombre || 'Desconocido')
+
 const cargando = ref(false)
-const formValue = ref<Partial<Equipo>>({})
+const formValue = ref<Partial<Equipo> & { motivo_reasignacion?: string }>({})
+const equipoOriginal = ref<Equipo | null>(null)
 
 const isLoading = ref(false)
 
@@ -83,7 +99,9 @@ watch(
 	async (newEquipo) => {
 		if (newEquipo) {
 			isLoading.value = true
+			equipoOriginal.value = JSON.parse(JSON.stringify(newEquipo))
 			formValue.value = JSON.parse(JSON.stringify(newEquipo))
+			formValue.value.motivo_reasignacion = ''
 			await nextTick()
 			isLoading.value = false
 		}
@@ -100,6 +118,7 @@ const handleUpdateShow = (value: boolean) => {
 
 const resetForm = () => {
 	formValue.value = {}
+	equipoOriginal.value = null
 }
 
 const opcionesDepartamentos = computed(() => {
@@ -166,6 +185,29 @@ const guardarCambios = async () => {
 		formValue.value.unidad = null
 	}
 
+	if (!equipoOriginal.value) {
+		message.error('Error: No se pudo cargar la información del equipo.')
+		return
+	}
+
+	// Crear registro de reasignación
+	const nuevaReasignacion = {
+		fecha: new Date().toISOString(),
+		direccion_anterior: equipoOriginal.value.direccion,
+		direccion_nueva: formValue.value.direccion,
+		departamento_anterior: equipoOriginal.value.departamento,
+		departamento_nuevo: formValue.value.departamento,
+		unidad_anterior: equipoOriginal.value.unidad,
+		unidad_nueva: formValue.value.unidad,
+		responsable_anterior: equipoOriginal.value.responsable,
+		responsable_nuevo: formValue.value.responsable,
+		motivo: formValue.value.motivo_reasignacion || 'Sin motivo especificado',
+		encargado_reasignacion: encargadoReasignacion.value, // Añadido
+	}
+
+	// Obtener historial actual
+	const historialActual = equipoOriginal.value.historial_reasignaciones || []
+
 	cargando.value = true
 	const { error } = await supabase
 		.from('equipos')
@@ -174,12 +216,14 @@ const guardarCambios = async () => {
 			departamento: formValue.value.departamento,
 			unidad: formValue.value.unidad,
 			responsable: formValue.value.responsable,
+			historial_reasignaciones: [...historialActual, nuevaReasignacion],
 		})
 		.eq('id', props.equipo!.id)
 	cargando.value = false
 
 	if (error) {
 		message.error('No se pudo reasignar el equipo: Revisar la DB.')
+		console.error('Error:', error)
 	} else {
 		message.success('Equipo reasignado con éxito.')
 		emit('equipoActualizado')

@@ -1,5 +1,5 @@
 <template>
-	<div class="app-sidebar-wrapper">
+	<div class="app-sidebar-wrapper" v-if="authStore.isLoggedIn">
 		<n-layout-sider
 			bordered
 			show-trigger
@@ -14,6 +14,7 @@
 			<div class="logo-container">
 				<img :src="logoSrc" alt="Logo Municipalidad" />
 			</div>
+
 			<n-menu
 				v-model:value="activeKey"
 				:options="menuOptions"
@@ -22,6 +23,7 @@
 				:collapsed-icon-size="22"
 			/>
 		</n-layout-sider>
+
 		<div class="header-content">
 			<ThemeSwitcher />
 		</div>
@@ -33,81 +35,60 @@ import { h, ref, watch, computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { NLayoutSider, NMenu, NIcon } from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
-import { ArchiveOutline, BusinessOutline, CreateOutline, LogOutOutline } from '@vicons/ionicons5'
+import { CreateOutline, BusinessOutline, ArchiveOutline, LogOutOutline } from '@vicons/ionicons5'
 import { useThemeStore } from '../stores/theme'
-import { useAuthStore } from '../stores/auth' // Importar el store de autenticación
+import { useAuthStore } from '../stores/auth'
 import ThemeSwitcher from './ThemeSwitcher.vue'
 
-// --- IMÁGENES ---
 import logoNegro from '../assets/municipalidad-de-Angol-negro.png'
 import logoBlanco from '../assets/municipalidad-de-Angol-blanco.png'
 
-// Props y Emits para el control v-model
-defineProps<{
-	collapsed: boolean
-}>()
-
+// Props y emits
+const { collapsed } = defineProps<{ collapsed: boolean }>()
 defineEmits(['update:collapsed'])
 
-// --- LÓGICA DEL TEMA ---
+// Stores
 const themeStore = useThemeStore()
-const authStore = useAuthStore() // Instanciar el store de autenticación
-const router = useRouter() // Instanciar el router
+const authStore = useAuthStore()
+const router = useRouter()
+const route = useRoute()
 
-const logoSrc = computed(() => {
-	return themeStore.isDark ? logoBlanco : logoNegro
-})
+// Logo dinámico según tema
+const logoSrc = computed(() => (themeStore.isDark ? logoBlanco : logoNegro))
 
-// Función para cerrar sesión
-const handleLogout = async () => {
-	await authStore.logout()
-	router.push({ name: 'home' }) // Redirigir a la página de inicio
+// Logout
+const handleLogout = () => {
+	authStore.logout()
+	router.push({ name: 'home' })
 }
 
-// Opciones del menú
-const menuOptions: MenuOption[] = [
+// Menú principal (aplanado, sin children)
+const menuOptions = computed<MenuOption[]>(() => [
 	{
-		label: 'Gestión',
-		key: 'gestion-group',
-		type: 'group',
-		children: [
-			{
-				label: () => h(RouterLink, { to: { name: 'equipos' } }, { default: () => 'Inventario' }),
-				key: 'equipos',
-				icon: () => h(NIcon, null, { default: () => h(CreateOutline) }),
-			},
-		],
+		label: () => h(RouterLink, { to: { name: 'equipos' } }, { default: () => 'Inventario' }),
+		key: 'equipos',
+		icon: () => h(NIcon, null, { default: () => h(CreateOutline) }),
 	},
 	{
-		label: 'Consultas',
-		key: 'consultas-group',
-		type: 'group',
-		children: [
-			{
-				label: () =>
-					h(RouterLink, { to: '/equipos-departamentos' }, { default: () => 'Por Departamento' }),
-				key: 'equipos-departamentos',
-				icon: () => h(NIcon, null, { default: () => h(BusinessOutline) }),
-			},
-			{
-				label: () =>
-					h(RouterLink, { to: { name: 'equipos-baja' } }, { default: () => 'Equipos Inactivos' }),
-				key: 'equipos-baja',
-				icon: () => h(NIcon, null, { default: () => h(ArchiveOutline) }),
-			},
-		],
+		label: () => h(RouterLink, { to: { name: 'reportes' } }, { default: () => 'Reportes' }),
+		key: 'reportes',
+		icon: () => h(NIcon, null, { default: () => h(BusinessOutline) }),
+	},
+	{
+		label: () =>
+			h(RouterLink, { to: { name: 'equipos-baja' } }, { default: () => 'Equipos Inactivos' }),
+		key: 'equipos-baja',
+		icon: () => h(NIcon, null, { default: () => h(ArchiveOutline) }),
 	},
 	{
 		label: () => h('a', { onClick: handleLogout }, 'Cerrar Sesión'),
 		key: 'logout',
 		icon: () => h(NIcon, null, { default: () => h(LogOutOutline) }),
 	},
-]
+])
 
-// Lógica para mantener el menú sincronizado con la ruta
-const route = useRoute()
+// Estado activo del menú
 const activeKey = ref<string | null>(null)
-
 watch(
 	() => route.name,
 	(newRouteName) => {

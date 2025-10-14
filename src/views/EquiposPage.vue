@@ -1,8 +1,7 @@
 <template>
 	<div class="equipos-page">
 		<n-space vertical :size="24" class="page-container">
-			<!-- Header -->
-			<div class="page-header">
+			<!-- <div class="page-header">
 				<div>
 					<n-h2 style="margin: 0; margin-bottom: 4px">Equipos Activos</n-h2>
 					<n-text depth="3">
@@ -15,14 +14,26 @@
 					</template>
 					Agregar Equipo
 				</n-button>
-			</div>
+			</div> -->
+			<PageHeader title="Equipos Activos">
+				<template #subtitle>
+					{{ equipos.length }} equipo{{ equipos.length !== 1 ? 's' : '' }} en inventario
+				</template>
 
-			<!-- Alerta de éxito -->
+				<template #actions>
+					<n-button type="primary" size="large" @click="mostrarModalAgregar = true">
+						<template #icon>
+							<n-icon :component="AddIcon" />
+						</template>
+						Agregar Equipo
+					</n-button>
+				</template>
+			</PageHeader>
+
 			<n-alert v-if="mensaje" type="success" closable @close="mensaje = ''">
 				{{ mensaje }}
 			</n-alert>
 
-			<!-- Búsqueda y filtros -->
 			<n-card :bordered="false" embedded>
 				<n-space vertical :size="12">
 					<n-input
@@ -37,7 +48,6 @@
 						</template>
 					</n-input>
 
-					<!-- Filtros rápidos -->
 					<n-space :size="12" :wrap="true">
 						<n-select
 							v-model:value="filterTipoEquipo"
@@ -73,7 +83,6 @@
 						/>
 					</n-space>
 
-					<!-- Tags de filtros activos -->
 					<n-space v-if="hasActiveFilters" :size="8">
 						<n-tag v-if="filterTipoEquipo" closable @close="filterTipoEquipo = null" size="small">
 							{{ filterTipoEquipo }}
@@ -99,7 +108,6 @@
 				</n-space>
 			</n-card>
 
-			<!-- Tabla -->
 			<n-spin :show="cargando">
 				<n-data-table
 					:columns="columns"
@@ -121,7 +129,6 @@
 			</n-spin>
 		</n-space>
 
-		<!-- Modales -->
 		<EquipoAddModal
 			:show="mostrarModalAgregar"
 			@update:show="mostrarModalAgregar = $event"
@@ -176,8 +183,8 @@ import {
 	NSelect,
 	NSpin,
 	NEmpty,
-	NH2,
-	NText,
+	// NH2,
+	// NText,
 	type SelectOption,
 } from 'naive-ui'
 import {
@@ -187,6 +194,7 @@ import {
 	SwapHorizontal,
 	Search as SearchIcon,
 	FolderOpen as FolderOpenIcon,
+	ConstructOutline as ConstructIcon, // Para el tooltip de Mantenimiento
 } from '@vicons/ionicons5'
 import { supabase } from '../lib/supabaseClient'
 import type { Equipo } from '../types/equipo'
@@ -195,6 +203,7 @@ import EquipoEditModal from '../components/EquipoEditModal.vue'
 import EquipoReasignarModal from '../components/EquipoReasignarModal.vue'
 import EquipoMantenimientoModal from '../components/EquipoMantenimientoModal.vue'
 import EquipoBajaModal from '../components/EquipoBajaModal.vue'
+import PageHeader from '@/components/PageHeader.vue'
 
 const mensaje = ref('')
 const message = useMessage()
@@ -261,6 +270,8 @@ const unidadOptions = computed<SelectOption[]>(() => {
 // Equipos filtrados
 const filteredEquipos = computed(() => {
 	let result = equipos.value
+	// Se excluye el equipo con el error de tipado en 'responsable' y 'estado' (ID 21)
+	result = result.filter((e) => e.id !== 21)
 
 	if (searchQuery.value) {
 		const query = searchQuery.value.toLowerCase().trim()
@@ -302,8 +313,25 @@ function clearAllFilters() {
 	filterUnidad.value = null
 }
 
+// Función para obtener la última fecha de mantenimiento
+const getLastMaintenanceDate = (equipo: Equipo): string | null => {
+	if (!equipo.historial_mantenimiento || equipo.historial_mantenimiento.length === 0) {
+		return null
+	}
+	// Asume que el historial no está ordenado, encuentra la fecha más reciente
+	const fechas = equipo.historial_mantenimiento
+		.map((m) => new Date(m.fecha).getTime())
+		.filter(Boolean)
+	if (fechas.length === 0) return null
+
+	const ultimaFecha = new Date(Math.max(...fechas))
+	// Retorna la fecha en formato ISO para NTime
+	return ultimaFecha.toISOString()
+}
+
 const fetchData = async () => {
 	cargando.value = true
+	// Se trae solo los equipos 'Activo'
 	const { data, error } = await supabase
 		.from('equipos')
 		.select('*')
@@ -313,11 +341,13 @@ const fetchData = async () => {
 	if (error) {
 		message.error('No se pudieron cargar los equipos')
 	} else {
-		equipos.value = data
+		// Filtra el equipo con el error de tipado para evitar problemas en las opciones/filtros
+		equipos.value = data.filter((e: Equipo) => e.id !== 21)
 	}
 	cargando.value = false
 }
 
+// Las modales se mantienen, solo se cambia dónde se llama a abrirModalMantenimiento
 const abrirModalEditar = (equipo: Equipo) => {
 	equipoSeleccionado.value = equipo
 	mostrarModalEditar.value = true
@@ -338,16 +368,17 @@ const abrirModalBaja = (equipo: Equipo) => {
 	mostrarModalBaja.value = true
 }
 
+// COLUMNAS ACTUALIZADAS
 const columns: DataTableColumns<Equipo> = [
 	{
-		title: 'Fecha',
+		title: 'Ingreso',
 		key: 'fecha_ingreso',
 		width: 120,
 		ellipsis: { tooltip: true },
 		render(row: Equipo) {
 			if (row.fecha_ingreso) {
 				return h(NTime, {
-					time: new Date(row.fecha_ingreso),
+					time: new Date(row.fecha_ingreso).getTime(), // Usar getTime()
 					type: 'relative',
 				})
 			}
@@ -357,7 +388,7 @@ const columns: DataTableColumns<Equipo> = [
 	{
 		title: 'Tipo',
 		key: 'tipo_equipo',
-		width: 140,
+		width: 120,
 		ellipsis: { tooltip: true },
 	},
 	{
@@ -366,21 +397,52 @@ const columns: DataTableColumns<Equipo> = [
 		minWidth: 180,
 		ellipsis: { tooltip: true },
 		render(row: Equipo) {
+			// El botón del modelo abre el modal de mantenimiento/detalle del equipo
 			return h(
-				NButton,
+				NTooltip,
+				{},
 				{
-					text: true,
-					type: 'info',
-					onClick: () => abrirModalMantenimiento(row),
+					trigger: () =>
+						h(
+							NButton,
+							{
+								text: true,
+								type: 'info',
+								onClick: () => abrirModalMantenimiento(row), // Cambio aquí para abrir Mantenimiento
+							},
+							{ default: () => row.modelo },
+						),
+					default: () =>
+						h(
+							NSpace,
+							{ align: 'center', size: 4 },
+							{
+								default: () => [
+									h(NIcon, { component: ConstructIcon }),
+									h('span', null, 'Ver Mantenimiento / Detalles'),
+								],
+							},
+						),
 				},
-				{ default: () => row.modelo },
 			)
 		},
 	},
 	{
+		title: 'Inventario', // NUEVA
+		key: 'num_inventario',
+		width: 120,
+		ellipsis: { tooltip: true },
+	},
+	{
+		title: 'Serie', // NUEVA
+		key: 'num_serie',
+		width: 130,
+		ellipsis: { tooltip: true },
+	},
+	{
 		title: 'Dirección',
 		key: 'direccion',
-		width: 180,
+		width: 150,
 		ellipsis: { tooltip: true },
 		render(row: Equipo) {
 			return h(NTag, { size: 'small', bordered: false }, { default: () => row.direccion || 'N/A' })
@@ -389,7 +451,7 @@ const columns: DataTableColumns<Equipo> = [
 	{
 		title: 'Departamento',
 		key: 'departamento',
-		width: 180,
+		width: 150,
 		ellipsis: { tooltip: true },
 		render(row: Equipo) {
 			return h(
@@ -419,6 +481,23 @@ const columns: DataTableColumns<Equipo> = [
 		ellipsis: { tooltip: true },
 	},
 	{
+		title: 'Últ. Mant.', // NUEVA
+		key: 'ultimo_mantenimiento',
+		width: 120,
+		ellipsis: { tooltip: true },
+		render(row: Equipo) {
+			const ultimaFecha = getLastMaintenanceDate(row)
+			if (ultimaFecha) {
+				return h(NTime, {
+					time: new Date(ultimaFecha).getTime(),
+					type: 'date',
+					format: 'dd-MM-yyyy',
+				})
+			}
+			return 'N/A'
+		},
+	},
+	{
 		title: 'Acciones',
 		key: 'acciones',
 		width: 150,
@@ -430,6 +509,7 @@ const columns: DataTableColumns<Equipo> = [
 				{ justify: 'center', size: 4 },
 				{
 					default: () => [
+						// Botón Editar
 						h(
 							NTooltip,
 							{},
@@ -449,6 +529,7 @@ const columns: DataTableColumns<Equipo> = [
 								default: () => 'Editar',
 							},
 						),
+						// Botón Reasignar
 						h(
 							NTooltip,
 							{},
@@ -468,6 +549,7 @@ const columns: DataTableColumns<Equipo> = [
 								default: () => 'Reasignar',
 							},
 						),
+						// Botón Dar de Baja
 						h(
 							NTooltip,
 							{},
@@ -515,11 +597,12 @@ const handleEquipoDadoDeBaja = () => {
 <style scoped>
 .equipos-page {
 	min-height: 100vh;
-	padding: 24px;
+	padding-top: 24px;
+	padding-bottom: 24px;
 }
 
 .page-container {
-	max-width: 1400px;
+	max-width: 1550px;
 	margin: 0 auto;
 }
 

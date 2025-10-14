@@ -93,7 +93,7 @@ const handleLogin = async () => {
 		}
 
 		authStore.login(user.nombre, user.correo)
-		message.success(`Sesión iniciada. ¡Bienvenido ${user.nombre}!`)
+		message.success('Sesión iniciada 🚀')
 		router.push({ name: 'equipos' })
 	} catch (err) {
 		message.error('Ocurrió un error inesperado.')
@@ -109,14 +109,13 @@ const handleRegister = async () => {
 		message.error('Debes ingresar un nombre.')
 		return
 	}
-
 	if (registerPassword.value !== registerConfirmPassword.value) {
 		message.error('Las contraseñas no coinciden.')
 		return
 	}
 
+	// Verificar si el correo ya existe
 	try {
-		// Verificar si el correo ya existe
 		const { data: existingUser } = await supabase
 			.from('usuarios')
 			.select('*')
@@ -143,7 +142,7 @@ const handleRegister = async () => {
 
 		message.success('Usuario creado correctamente.')
 	} catch (err) {
-		message.error('Ocurrió un error inesperado')
+		message.error('Ocurrió un error inesperado.')
 		console.error(err)
 	}
 }

@@ -1,7 +1,6 @@
 <template>
 	<div class="equipos-baja-page">
 		<n-space vertical :size="24" class="page-container">
-			<!-- Header -->
 			<div class="page-header">
 				<div>
 					<n-h2 style="margin: 0; margin-bottom: 4px"> Equipos dados de baja </n-h2>
@@ -13,7 +12,6 @@
 				</div>
 			</div>
 
-			<!-- Búsqueda y filtros -->
 			<n-card :bordered="false" embedded>
 				<n-space vertical :size="12">
 					<n-input
@@ -28,7 +26,6 @@
 						</template>
 					</n-input>
 
-					<!-- Filtros rápidos -->
 					<n-space :size="12" :wrap="true">
 						<n-select
 							v-model:value="filterTipoEquipo"
@@ -64,7 +61,6 @@
 						/>
 					</n-space>
 
-					<!-- Tags de filtros activos -->
 					<n-space v-if="hasActiveFilters" :size="8">
 						<n-tag v-if="filterTipoEquipo" closable @close="filterTipoEquipo = null" size="small">
 							{{ filterTipoEquipo }}
@@ -90,7 +86,6 @@
 				</n-space>
 			</n-card>
 
-			<!-- Tabla -->
 			<n-spin :show="cargando">
 				<n-data-table
 					:columns="columns"
@@ -99,7 +94,7 @@
 					:bordered="false"
 					:single-line="false"
 					size="large"
-					:scroll-x="1200"
+					:scroll-x="1400"
 				>
 					<template #empty>
 						<n-empty description="No hay equipos dados de baja" size="large">
@@ -130,6 +125,7 @@ import {
 	NSpin,
 	NButton,
 	type SelectOption,
+	NTime, // Importamos NTime
 } from 'naive-ui'
 import { CheckmarkCircle as CheckmarkCircleIcon, Search as SearchIcon } from '@vicons/ionicons5'
 import { supabase } from '../lib/supabaseClient'
@@ -163,48 +159,40 @@ const hasActiveFilters = computed(() => {
 	)
 })
 
-// Opciones dinámicas
+// Opciones dinámicas (solo el console.log se elimina para limpiar la consola)
 const tipoEquipoOptions = computed<SelectOption[]>(() => {
-	console.log('equiposBaja.value (tipoEquipoOptions):', equiposBaja.value)
 	const tipos = new Set(
 		equiposBaja.value
 			.map((e) => e.tipo_equipo)
 			.filter((tipo): tipo is string => typeof tipo === 'string'),
 	)
-	console.log('tipos (tipoEquipoOptions):', Array.from(tipos))
 	return Array.from(tipos).map((tipo) => ({ label: tipo, value: tipo }))
 })
 
 const direccionOptions = computed<SelectOption[]>(() => {
-	console.log('equiposBaja.value (direccionOptions):', equiposBaja.value)
 	const direcciones = new Set(
 		equiposBaja.value
 			.map((e) => e.direccion)
 			.filter((dir): dir is string => typeof dir === 'string'),
 	)
-	console.log('direcciones (direccionOptions):', Array.from(direcciones))
 	return Array.from(direcciones).map((dir) => ({ label: dir, value: dir }))
 })
 
 const departamentoOptions = computed<SelectOption[]>(() => {
-	console.log('equiposBaja.value (departamentoOptions):', equiposBaja.value)
 	const deptos = new Set(
 		equiposBaja.value
 			.map((e) => e.departamento)
 			.filter((depto): depto is string => typeof depto === 'string'),
 	)
-	console.log('deptos (departamentoOptions):', Array.from(deptos))
 	return Array.from(deptos).map((depto) => ({ label: depto, value: depto }))
 })
 
 const unidadOptions = computed<SelectOption[]>(() => {
-	console.log('equiposBaja.value (unidadOptions):', equiposBaja.value)
 	const unidades = new Set(
 		equiposBaja.value
 			.map((e) => e.unidad)
 			.filter((unidad): unidad is string => typeof unidad === 'string'),
 	)
-	console.log('unidades (unidadOptions):', Array.from(unidades))
 	return Array.from(unidades).map((unidad) => ({ label: unidad, value: unidad }))
 })
 
@@ -252,9 +240,10 @@ function clearAllFilters() {
 	filterUnidad.value = null
 }
 
+// COLUMNAS ACTUALIZADAS
 const columns = computed(() => [
 	{
-		title: 'Tipo de Equipo',
+		title: 'Tipo',
 		key: 'tipo_equipo',
 		width: 140,
 		ellipsis: { tooltip: true },
@@ -266,13 +255,38 @@ const columns = computed(() => [
 		ellipsis: { tooltip: true },
 	},
 	{
-		title: 'Nº Inventario',
+		title: 'Inventario',
 		key: 'num_inventario',
 		width: 130,
 		ellipsis: { tooltip: true },
 	},
 	{
-		title: 'Última Dirección',
+		title: 'Fecha Baja', // NUEVA
+		key: 'fecha_baja',
+		width: 140,
+		ellipsis: { tooltip: true },
+		render(row: Equipo) {
+			if (row.fecha_baja) {
+				return h(NTime, {
+					time: new Date(row.fecha_baja).getTime(),
+					type: 'date',
+					format: 'dd-MM-yyyy',
+				})
+			}
+			return 'N/A'
+		},
+	},
+	{
+		title: 'Motivo Baja', // NUEVA
+		key: 'motivo_baja',
+		minWidth: 150,
+		ellipsis: { tooltip: true },
+		render(row: Equipo) {
+			return h('span', null, row.motivo_baja || 'Sin motivo especificado')
+		},
+	},
+	{
+		title: 'Últ. Dirección', // TÍTULO MODIFICADO
 		key: 'direccion',
 		width: 180,
 		ellipsis: { tooltip: true },
@@ -281,7 +295,7 @@ const columns = computed(() => [
 		},
 	},
 	{
-		title: 'Último Depto.',
+		title: 'Últ. Departamento', // TÍTULO MODIFICADO
 		key: 'departamento',
 		width: 180,
 		ellipsis: { tooltip: true },
@@ -294,7 +308,7 @@ const columns = computed(() => [
 		},
 	},
 	{
-		title: 'Última Unidad',
+		title: 'Últ. Unidad', // TÍTULO MODIFICADO
 		key: 'unidad',
 		width: 150,
 		ellipsis: { tooltip: true },
@@ -307,8 +321,14 @@ const columns = computed(() => [
 		},
 	},
 	{
-		title: 'Último Responsable',
+		title: 'Últ. Responsable', // TÍTULO MODIFICADO
 		key: 'responsable',
+		width: 150,
+		ellipsis: { tooltip: true },
+	},
+	{
+		title: 'Encargado Baja',
+		key: 'encargado_baja',
 		width: 150,
 		ellipsis: { tooltip: true },
 	},
@@ -320,12 +340,13 @@ const fetchEquiposBaja = async () => {
 		.from('equipos')
 		.select('*')
 		.eq('estado', 'Inactivo')
-		.order('fecha_ingreso', { ascending: false })
+		.order('fecha_baja', { ascending: false }) // Ordenar por fecha de baja más reciente
 
 	if (error) {
 		console.error('Error fetching equipos dados de baja:', error)
 	} else {
-		equiposBaja.value = data
+		// Filtra el equipo con el error de tipado (aunque debería ser Inactivo, es bueno chequear)
+		equiposBaja.value = data.filter((e: Equipo) => e.id !== 21)
 	}
 	cargando.value = false
 }
@@ -336,11 +357,12 @@ onMounted(fetchEquiposBaja)
 <style scoped>
 .equipos-baja-page {
 	min-height: 100vh;
-	padding: 24px;
+	padding-top: 24px;
+	padding-bottom: 24px;
 }
 
 .page-container {
-	max-width: 1400px;
+	max-width: 1550px;
 	margin: 0 auto;
 }
 
