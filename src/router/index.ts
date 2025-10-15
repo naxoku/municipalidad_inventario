@@ -5,6 +5,7 @@ import EquiposBajaPage from '../views/EquiposBajaPage.vue'
 // import EquiposDepartamentos from '../views/EquiposDepartamentos.vue'
 import ReportesPage from '../views/ReportesPage.vue'
 import { useAuthStore } from '../stores/auth'
+import { supabase } from '../lib/supabaseClient' // Importar supabase
 
 const routes = [
 	{
@@ -38,8 +39,11 @@ const router = createRouter({
 })
 
 // Protección de rutas
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
 	const authStore = useAuthStore()
+
+	// Asegurarse de que la sesión de Supabase se ha cargado
+	await supabase.auth.getSession()
 
 	if (authStore.isLoggedIn && to.name === 'home') {
 		// Usuario logueado no puede ir al login/registro

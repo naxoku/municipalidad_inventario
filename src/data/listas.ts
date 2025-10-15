@@ -120,6 +120,12 @@ export const especificacionesPorEquipo: {
 			placeholder: 'Ej: 00:1A:2B:3C:4D:5E',
 			type: 'input',
 		},
+		{
+			key: 'direccion_ip',
+			label: 'Dirección IP',
+			placeholder: 'Ej: 192.168.1.1',
+			type: 'input',
+		},
 	],
 	'Computador de escritorio (PC)': [
 		{ key: 'procesador', label: 'Procesador', placeholder: 'Ej: AMD Ryzen 5', type: 'input' },
@@ -147,6 +153,12 @@ export const especificacionesPorEquipo: {
 			key: 'direccion_mac',
 			label: 'Dirección MAC',
 			placeholder: 'Ej: 00:1A:2B:3C:4D:5E',
+			type: 'input',
+		},
+		{
+			key: 'direccion_ip',
+			label: 'Dirección IP',
+			placeholder: 'Ej: 192.168.1.1',
 			type: 'input',
 		},
 	],
@@ -178,6 +190,12 @@ export const especificacionesPorEquipo: {
 			placeholder: 'Ej: 00:1A:2B:3C:4D:5E',
 			type: 'input',
 		},
+		{
+			key: 'direccion_ip',
+			label: 'Dirección IP',
+			placeholder: 'Ej: 192.168.1.1',
+			type: 'input',
+		},
 	],
 	Impresora: [
 		{
@@ -206,6 +224,12 @@ export const especificacionesPorEquipo: {
 			placeholder: 'Ej: 00:1A:2B:3C:4D:5E',
 			type: 'input',
 		},
+		{
+			key: 'direccion_ip',
+			label: 'Dirección IP',
+			placeholder: 'Ej: 192.168.1.1',
+			type: 'input',
+		},
 	],
 	Switch: [
 		{
@@ -228,6 +252,12 @@ export const especificacionesPorEquipo: {
 			placeholder: '¿Soporta PoE?',
 			type: 'select',
 			options: ['Sí', 'No'],
+		},
+		{
+			key: 'direccion_ip',
+			label: 'Dirección IP',
+			placeholder: 'Ej: 192.168.1.1',
+			type: 'input',
 		},
 	],
 }
