@@ -5,14 +5,15 @@
 			show-trigger
 			collapse-mode="width"
 			:collapsed-width="64"
-			:width="240"
+			:width="250"
 			:collapsed="collapsed"
 			@collapse="$emit('update:collapsed', true)"
 			@expand="$emit('update:collapsed', false)"
 			class="app-sidebar-layout"
 		>
 			<div class="logo-container">
-				<img :src="logoSrc" alt="Logo Municipalidad" />
+				<img v-if="themeStore.isDark" :src="logoBlanco" alt="Logo Municipalidad" />
+				<img v-else :src="logoNegro" alt="Logo Municipalidad" />
 			</div>
 
 			<n-menu
@@ -52,9 +53,6 @@ const themeStore = useThemeStore()
 const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
-
-// Logo dinámico según tema
-const logoSrc = computed(() => (themeStore.isDark ? logoBlanco : logoNegro))
 
 // Logout
 const handleLogout = () => {

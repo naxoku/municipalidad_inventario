@@ -194,7 +194,6 @@ import {
 	SwapHorizontal,
 	Search as SearchIcon,
 	FolderOpen as FolderOpenIcon,
-	ConstructOutline as ConstructIcon, // Para el tooltip de Mantenimiento
 } from '@vicons/ionicons5'
 import { supabase } from '../lib/supabaseClient'
 import type { Equipo } from '../types/equipo'
@@ -417,10 +416,7 @@ const columns: DataTableColumns<Equipo> = [
 							NSpace,
 							{ align: 'center', size: 4 },
 							{
-								default: () => [
-									h(NIcon, { component: ConstructIcon }),
-									h('span', null, 'Ver Mantenimiento / Detalles'),
-								],
+								default: () => [h('span', null, ' Mantenimiento / Detalles')],
 							},
 						),
 				},

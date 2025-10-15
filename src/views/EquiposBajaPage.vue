@@ -110,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, h, computed } from 'vue'
+import { ref, onMounted, h, computed, watch } from 'vue'
 import {
 	NDataTable,
 	NCard,
@@ -134,6 +134,11 @@ import type { Equipo } from '../types/equipo'
 const equiposBaja = ref<Equipo[]>([])
 const cargando = ref(false)
 
+// Paginación
+const currentPage = ref(1)
+const pageSize = ref(15)
+const itemCount = ref(0) // Total de elementos para la paginación del lado del servidor
+
 // Filtros
 const searchQuery = ref('')
 const filterTipoEquipo = ref<string | null>(null)
@@ -144,14 +149,26 @@ const filterUnidad = ref<string | null>(null)
 const noSideSpace = (value: string) => !value.startsWith(' ') && !value.endsWith(' ')
 
 const paginationConfig = computed(() => ({
-	pageSize: 15,
+	page: currentPage.value,
+	pageSize: pageSize.value,
+	itemCount: itemCount.value,
 	showSizePicker: true,
 	pageSizes: [15, 30, 50, 100],
 	showQuickJumper: true,
+	onUpdatePage: (page: number) => {
+		currentPage.value = page
+		fetchEquiposBaja()
+	},
+	onUpdatePageSize: (size: number) => {
+		pageSize.value = size
+		currentPage.value = 1 // Resetear a la primera página al cambiar el tamaño
+		fetchEquiposBaja()
+	},
 }))
 
 const hasActiveFilters = computed(() => {
 	return !!(
+		searchQuery.value ||
 		filterTipoEquipo.value ||
 		filterDireccion.value ||
 		filterDepartamento.value ||
@@ -159,78 +176,14 @@ const hasActiveFilters = computed(() => {
 	)
 })
 
-// Opciones dinámicas (solo el console.log se elimina para limpiar la consola)
-const tipoEquipoOptions = computed<SelectOption[]>(() => {
-	const tipos = new Set(
-		equiposBaja.value
-			.map((e) => e.tipo_equipo)
-			.filter((tipo): tipo is string => typeof tipo === 'string'),
-	)
-	return Array.from(tipos).map((tipo) => ({ label: tipo, value: tipo }))
-})
+// Opciones dinámicas para filtros
+const tipoEquipoOptions = ref<SelectOption[]>([])
+const direccionOptions = ref<SelectOption[]>([])
+const departamentoOptions = ref<SelectOption[]>([])
+const unidadOptions = ref<SelectOption[]>([])
 
-const direccionOptions = computed<SelectOption[]>(() => {
-	const direcciones = new Set(
-		equiposBaja.value
-			.map((e) => e.direccion)
-			.filter((dir): dir is string => typeof dir === 'string'),
-	)
-	return Array.from(direcciones).map((dir) => ({ label: dir, value: dir }))
-})
-
-const departamentoOptions = computed<SelectOption[]>(() => {
-	const deptos = new Set(
-		equiposBaja.value
-			.map((e) => e.departamento)
-			.filter((depto): depto is string => typeof depto === 'string'),
-	)
-	return Array.from(deptos).map((depto) => ({ label: depto, value: depto }))
-})
-
-const unidadOptions = computed<SelectOption[]>(() => {
-	const unidades = new Set(
-		equiposBaja.value
-			.map((e) => e.unidad)
-			.filter((unidad): unidad is string => typeof unidad === 'string'),
-	)
-	return Array.from(unidades).map((unidad) => ({ label: unidad, value: unidad }))
-})
-
-// Equipos filtrados
-const filteredEquipos = computed(() => {
-	let result = equiposBaja.value
-
-	if (searchQuery.value) {
-		const query = searchQuery.value.toLowerCase().trim()
-		result = result.filter((equipo) => {
-			return (
-				equipo.modelo?.toLowerCase().includes(query) ||
-				equipo.tipo_equipo?.toLowerCase().includes(query) ||
-				equipo.num_serie?.toLowerCase().includes(query) ||
-				equipo.num_inventario?.toLowerCase().includes(query) ||
-				equipo.responsable?.toLowerCase().includes(query)
-			)
-		})
-	}
-
-	if (filterTipoEquipo.value) {
-		result = result.filter((equipo) => equipo.tipo_equipo === filterTipoEquipo.value)
-	}
-
-	if (filterDireccion.value) {
-		result = result.filter((equipo) => equipo.direccion === filterDireccion.value)
-	}
-
-	if (filterDepartamento.value) {
-		result = result.filter((equipo) => equipo.departamento === filterDepartamento.value)
-	}
-
-	if (filterUnidad.value) {
-		result = result.filter((equipo) => equipo.unidad === filterUnidad.value)
-	}
-
-	return result
-})
+// Equipos filtrados (ahora se maneja en fetchEquiposBaja)
+const filteredEquipos = computed(() => equiposBaja.value)
 
 function clearAllFilters() {
 	searchQuery.value = ''
@@ -238,6 +191,8 @@ function clearAllFilters() {
 	filterDireccion.value = null
 	filterDepartamento.value = null
 	filterUnidad.value = null
+	currentPage.value = 1 // Resetear la paginación
+	fetchEquiposBaja() // Volver a cargar datos con filtros limpios
 }
 
 // COLUMNAS ACTUALIZADAS
@@ -336,20 +291,84 @@ const columns = computed(() => [
 
 const fetchEquiposBaja = async () => {
 	cargando.value = true
-	const { data, error } = await supabase
+	let query = supabase
 		.from('equipos')
-		.select('*')
+		.select(
+			'id, tipo_equipo, modelo, num_inventario, fecha_baja, motivo_baja, direccion, departamento, unidad, responsable, encargado_baja',
+			{ count: 'exact' },
+		) // Solicitar el conteo total y solo los campos necesarios
 		.eq('estado', 'Inactivo')
 		.order('fecha_baja', { ascending: false }) // Ordenar por fecha de baja más reciente
+
+	// Aplicar filtros de búsqueda
+	if (searchQuery.value) {
+		const search = `%${searchQuery.value.toLowerCase().trim()}%`
+		query = query.or(
+			`modelo.ilike.${search},tipo_equipo.ilike.${search},num_serie.ilike.${search},num_inventario.ilike.${search},responsable.ilike.${search}`,
+		)
+	}
+	if (filterTipoEquipo.value) {
+		query = query.eq('tipo_equipo', filterTipoEquipo.value)
+	}
+	if (filterDireccion.value) {
+		query = query.eq('direccion', filterDireccion.value)
+	}
+	if (filterDepartamento.value) {
+		query = query.eq('departamento', filterDepartamento.value)
+	}
+	if (filterUnidad.value) {
+		query = query.eq('unidad', filterUnidad.value)
+	}
+
+	// Aplicar paginación
+	const from = (currentPage.value - 1) * pageSize.value
+	const to = from + pageSize.value - 1
+	query = query.range(from, to)
+
+	const { data, error, count } = await query
 
 	if (error) {
 		console.error('Error fetching equipos dados de baja:', error)
 	} else {
-		// Filtra el equipo con el error de tipado (aunque debería ser Inactivo, es bueno chequear)
 		equiposBaja.value = data.filter((e: Equipo) => e.id !== 21)
+		itemCount.value = count || 0 // Actualizar el conteo total
+		updateFilterOptions(data) // Actualizar opciones de filtro con los datos actuales
 	}
 	cargando.value = false
 }
+
+// Función para actualizar las opciones de los selectores de filtro
+const updateFilterOptions = (currentEquipos: Equipo[]) => {
+	const tipos = new Set(currentEquipos.map((e) => e.tipo_equipo).filter(Boolean))
+	tipoEquipoOptions.value = Array.from(tipos).map((tipo) => ({
+		label: tipo as string,
+		value: tipo as string,
+	}))
+
+	const direcciones = new Set(currentEquipos.map((e) => e.direccion).filter(Boolean))
+	direccionOptions.value = Array.from(direcciones).map((dir) => ({
+		label: dir as string,
+		value: dir as string,
+	}))
+
+	const deptos = new Set(currentEquipos.map((e) => e.departamento).filter(Boolean))
+	departamentoOptions.value = Array.from(deptos).map((depto) => ({
+		label: depto as string,
+		value: depto as string,
+	}))
+
+	const unidades = new Set(currentEquipos.map((e) => e.unidad).filter(Boolean))
+	unidadOptions.value = Array.from(unidades).map((unidad) => ({
+		label: unidad as string,
+		value: unidad as string,
+	}))
+}
+
+// Observar cambios en los filtros para recargar datos
+watch([searchQuery, filterTipoEquipo, filterDireccion, filterDepartamento, filterUnidad], () => {
+	currentPage.value = 1 // Resetear a la primera página al cambiar cualquier filtro
+	fetchEquiposBaja()
+})
 
 onMounted(fetchEquiposBaja)
 </script>

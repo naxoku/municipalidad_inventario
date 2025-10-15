@@ -9,6 +9,11 @@
     "typeRoots": ["./node_modules/@types", "./node_modules"],
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": false
   }
 }

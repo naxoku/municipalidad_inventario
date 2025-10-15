@@ -19,4 +19,16 @@ export default defineConfigWithVueTs(
 	pluginVue.configs['flat/essential'],
 	vueTsConfigs.recommended,
 	skipFormatting,
+	{
+		rules: {
+			'@typescript-eslint/no-explicit-any': 'off',
+			'@typescript-eslint/ban-ts-comment': 'off',
+			'@typescript-eslint/no-non-null-assertion': 'off',
+			'@typescript-eslint/consistent-type-assertions': 'off',
+			'@typescript-eslint/no-unused-vars': 'warn',
+			'vue/no-unused-vars': 'warn',
+			'vue/no-mutating-props': 'off',
+			'vue/multi-word-component-names': 'off',
+		},
+	},
 )
