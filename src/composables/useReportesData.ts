@@ -1,5 +1,5 @@
 import { ref, computed, onMounted, h, watch } from 'vue'
-import { type DataTableColumns, NTag, NTime, NSpace } from 'naive-ui'
+import { type DataTableColumns, NTag, NTime, NSpace, useMessage } from 'naive-ui'
 import {
 	AddCircleOutline as AddCircleIcon,
 	SwapHorizontalOutline as SwapHorizontalIcon,
@@ -21,6 +21,7 @@ import autoTable from 'jspdf-autotable'
 
 export function useReportesData() {
 	// Estados
+	const message = useMessage()
 	const equipos = ref<Equipo[]>([])
 	const cargando = ref(false)
 	const rangoFechas = ref<[number, number] | null>(null)
@@ -261,7 +262,7 @@ export function useReportesData() {
 	}
 
 	// Funciones de exportación
-	const exportarAntiguosPDF = async (message: ReturnType<typeof useMessage>) => {
+	const exportarAntiguosPDF = async () => {
 		exportandoPDF.value = true
 		try {
 			if (equiposCriticos.value.length === 0) {
@@ -347,7 +348,7 @@ export function useReportesData() {
 		}
 	}
 
-	const exportarAntiguosExcel = (message: ReturnType<typeof useMessage>) => {
+	const exportarAntiguosExcel = () => {
 		exportandoExcel.value = true
 		try {
 			if (equiposCriticos.value.length === 0) {
@@ -378,13 +379,14 @@ export function useReportesData() {
 		}
 	}
 
-	const exportarHistorialPDF = async (message: ReturnType<typeof useMessage>) => {
+	const exportarHistorialPDF = async () => {
 		exportandoPDF.value = true
 		try {
 			if (eventosFiltrados.value.length === 0) {
 				message.warning('No hay eventos en el historial para exportar a PDF.')
 				return
 			}
+			console.log('Eventos a exportar:', eventosFiltrados.value)
 
 			// Orientación horizontal ('landscape')
 			const doc = new jsPDF('landscape', 'mm', 'a4')
@@ -397,7 +399,7 @@ export function useReportesData() {
 			doc.setTextColor(0)
 
 			const headers = ['Fecha', 'Tipo', 'Título', 'Descripción', 'Detalle', 'Modelo', 'Responsable']
-			const data = eventosFiltrados.value.map((e) => [
+			const data = [...eventosFiltrados.value].map((e) => [
 				formatearFecha(e.fecha),
 				e.tipo.charAt(0).toUpperCase() + e.tipo.slice(1),
 				e.titulo,
@@ -453,7 +455,7 @@ export function useReportesData() {
 		}
 	}
 
-	const exportarHistorialExcel = (message: ReturnType<typeof useMessage>) => {
+	const exportarHistorialExcel = () => {
 		exportandoExcel.value = true
 		try {
 			if (eventosFiltrados.value.length === 0) {
@@ -461,7 +463,7 @@ export function useReportesData() {
 				return
 			}
 
-			const dataToExport = eventosFiltrados.value.map((e) => ({
+			const dataToExport = [...eventosFiltrados.value].map((e) => ({
 				Fecha: formatearFecha(e.fecha),
 				Tipo: e.tipo,
 				Título: e.titulo,
@@ -483,7 +485,7 @@ export function useReportesData() {
 		}
 	}
 
-	const exportarReporteCompleto = async (message: ReturnType<typeof useMessage>) => {
+	const exportarReporteCompleto = async () => {
 		exportandoPDF.value = true
 		try {
 			const doc = new jsPDF('landscape', 'mm', 'a4')
@@ -595,7 +597,7 @@ export function useReportesData() {
 					'Modelo',
 					'Responsable',
 				]
-				const dataHistorial = eventosFiltrados.value.map((e) => [
+				const dataHistorial = [...eventosFiltrados.value].map((e) => [
 					formatearFecha(e.fecha),
 					e.tipo.charAt(0).toUpperCase() + e.tipo.slice(1),
 					e.titulo,
@@ -658,7 +660,7 @@ export function useReportesData() {
 		}
 	}
 
-	const fetchEquipos = async () => {
+	const fetchEquipos = async (message: ReturnType<typeof useMessage>) => {
 		cargando.value = true
 		try {
 			// Trae todos los equipos, Activos e Inactivos, para generar todos los eventos.
@@ -674,7 +676,7 @@ export function useReportesData() {
 		}
 	}
 
-	onMounted(fetchEquipos)
+	onMounted(() => fetchEquipos(message))
 
 	return {
 		equipos,

@@ -8,32 +8,17 @@
 		</template>
 		<n-grid :x-gap="12" :y-gap="12" :cols="3">
 			<n-gi>
-				<n-card
-					title="Equipos Antiguos"
-					:bordered="false"
-					:segmented="{ content: 'soft' }"
-					size="small"
-				>
+				<n-card title="Equipos Antiguos" :bordered="false" :segmented="{ content: 'soft' }" size="small">
 					<n-space vertical :size="8">
 						<n-text depth="3">Exportar listado de equipos que requieren atención</n-text>
 						<n-space>
-							<n-button
-								type="error"
-								secondary
-								@click="exportarAntiguosPDF(message)"
-								:loading="exportandoPDF"
-							>
+							<n-button type="error" secondary @click="exportarAntiguosPDF()" :loading="exportandoPDF">
 								<template #icon>
 									<n-icon :component="DocumentTextIcon" />
 								</template>
 								PDF
 							</n-button>
-							<n-button
-								type="info"
-								secondary
-								@click="exportarAntiguosExcel(message)"
-								:loading="exportandoExcel"
-							>
+							<n-button type="info" secondary @click="exportarAntiguosExcel()" :loading="exportandoExcel">
 								<template #icon>
 									<n-icon :component="StatsChartIcon" />
 								</template>
@@ -45,32 +30,17 @@
 			</n-gi>
 
 			<n-gi>
-				<n-card
-					title="Historial de Movimientos"
-					:bordered="false"
-					:segmented="{ content: 'soft' }"
-					size="small"
-				>
+				<n-card title="Historial de Movimientos" :bordered="false" :segmented="{ content: 'soft' }" size="small">
 					<n-space vertical :size="8">
 						<n-text depth="3">Exportar actividad y movimientos recientes</n-text>
 						<n-space>
-							<n-button
-								type="error"
-								secondary
-								@click="exportarHistorialPDF(message)"
-								:loading="exportandoPDF"
-							>
+							<n-button type="error" secondary @click="exportarHistorialPDF()" :loading="exportandoPDF">
 								<template #icon>
 									<n-icon :component="DocumentTextIcon" />
 								</template>
 								PDF
 							</n-button>
-							<n-button
-								type="info"
-								secondary
-								@click="exportarHistorialExcel(message)"
-								:loading="exportandoExcel"
-							>
+							<n-button type="info" secondary @click="exportarHistorialExcel()" :loading="exportandoExcel">
 								<template #icon>
 									<n-icon :component="StatsChartIcon" />
 								</template>
@@ -82,20 +52,10 @@
 			</n-gi>
 
 			<n-gi>
-				<n-card
-					title="Reporte Completo"
-					:bordered="false"
-					:segmented="{ content: 'soft' }"
-					size="small"
-				>
+				<n-card title="Reporte Completo" :bordered="false" :segmented="{ content: 'soft' }" size="small">
 					<n-space vertical :size="8">
 						<n-text depth="3"> Incluye equipos antiguos, historial y resumen ejecutivo </n-text>
-						<n-button
-							type="success"
-							block
-							@click="exportarReporteCompleto(message)"
-							:loading="exportandoPDF"
-						>
+						<n-button type="success" block @click="exportarReporteCompleto()" :loading="exportandoPDF">
 							<template #icon>
 								<n-icon :component="PrintIcon" />
 							</template>
