@@ -156,7 +156,11 @@ const mostrarModal = computed({
 const cargandoForm = ref(false)
 
 const nuevoEquipo = reactive<
-	Partial<Equipo> & { detalles: { [key: string]: string }; encargado_registro: string }
+	Partial<Equipo> & {
+		detalles: { [key: string]: string }
+		encargado_registro: string
+		fecha_ingreso: string
+	}
 >({
 	tipo_equipo: null,
 	modelo: '',
@@ -168,7 +172,8 @@ const nuevoEquipo = reactive<
 	responsable: '',
 	estado: 'Activo',
 	detalles: {},
-	encargado_registro: authStore.userNombre, // Inicializar con el nombre del usuario logueado
+	encargado_registro: authStore.userNombre,
+	fecha_ingreso: new Date().toISOString(),
 })
 
 const opcionesDepartamentos = computed(() => {
@@ -238,6 +243,7 @@ const resetForm = () => {
 		estado: 'Activo',
 		detalles: {},
 		encargado_registro: authStore.userNombre, // Resetear también el encargado de registro
+		fecha_ingreso: new Date().toISOString(), // Resetear también la fecha de registro
 	})
 }
 

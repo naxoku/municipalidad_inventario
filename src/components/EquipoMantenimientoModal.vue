@@ -287,13 +287,12 @@ const emit = defineEmits(['update:show', 'equipoActualizado'])
 const cargando = ref(false)
 const formRef = ref<FormInst | null>(null)
 
-// Tipado del formulario: Usamos Mantenimiento, pero forzamos 'fecha' a number
-const mantenimientoForm: Mantenimiento & { fecha: number } = reactive({
-	fecha: Date.now(), // number
+const mantenimientoForm: Mantenimiento & { fecha: string } = reactive({
+	fecha: new Date().toISOString(),
 	descripcion: '',
 	encargado_mantenimiento: authStore.userNombre || null,
 	notas: null,
-}) as Mantenimiento & { fecha: number }
+}) as Mantenimiento & { fecha: string }
 
 const detallesEditables = ref<{ [key: string]: string | null }>({})
 
@@ -342,7 +341,7 @@ const handleUpdateShow = (value: boolean) => {
 }
 
 const resetForm = () => {
-	mantenimientoForm.fecha = Date.now()
+	mantenimientoForm.fecha = new Date().toISOString()
 	mantenimientoForm.descripcion = ''
 	mantenimientoForm.encargado_mantenimiento = authStore.userNombre || null
 	mantenimientoForm.notas = null
@@ -352,8 +351,7 @@ const resetForm = () => {
 
 // Función para crear el registro final que se envía a la DB
 function crearRegistroMantenimiento(form: typeof mantenimientoForm): Mantenimiento {
-	// Se asegura que se convierte el number a string
-	const fechaISO = new Date(form.fecha as number).toISOString().split('T')[0]
+	const fechaISO = new Date(form.fecha).toISOString()
 	return {
 		fecha: fechaISO,
 		descripcion: form.descripcion,
@@ -367,8 +365,7 @@ function generarHistorialDeCambios(
 	detallesNuevos: typeof detallesEditables.value,
 ): CambioComponente[] {
 	const cambios: CambioComponente[] = []
-	// Se asegura que se convierte el number a string
-	const fechaCambio = new Date(mantenimientoForm.fecha as number).toISOString().split('T')[0]
+	const fechaCambio = new Date(mantenimientoForm.fecha).toISOString()
 
 	for (const key in detallesNuevos) {
 		const valorOriginal = detallesOriginales?.[key] ?? null
@@ -379,13 +376,13 @@ function generarHistorialDeCambios(
 
 		if (String(valorOriginalLimpio) !== String(valorNuevoLimpio)) {
 			cambios.push({
-				fecha: fechaCambio, // string
+				fecha: fechaCambio,
 				componente: key,
 				valor_anterior: valorOriginalLimpio,
 				valor_nuevo: valorNuevoLimpio === undefined ? null : valorNuevoLimpio,
 				notas: `Modificado durante mantenimiento el ${new Date(
-					mantenimientoForm.fecha as number,
-				).toLocaleDateString('es-CL')}`,
+					mantenimientoForm.fecha,
+				).toISOString()}`,
 			})
 		}
 	}
