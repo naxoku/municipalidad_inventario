@@ -5,6 +5,7 @@ import EquiposBajaPage from '../views/EquiposBajaPage.vue'
 // import EquiposDepartamentos from '../views/EquiposDepartamentos.vue'
 import ReportesPage from '../views/ReportesPage.vue'
 import JerarquiaEquiposPage from '../views/JerarquiaEquiposPage.vue'
+import RegisterPage from '../views/RegisterPage.vue'
 import { useAuthStore } from '../stores/auth'
 import { supabase } from '../lib/supabaseClient' // Importar supabase
 
@@ -38,6 +39,11 @@ const routes = [
 		component: JerarquiaEquiposPage,
 		meta: { requiresAuth: true },
 	},
+	{
+		path: '/register',
+		name: 'register',
+		component: RegisterPage,
+	},
 ]
 
 const router = createRouter({
@@ -52,8 +58,8 @@ router.beforeEach(async (to, from, next) => {
 	// Asegurarse de que la sesión de Supabase se ha cargado
 	await supabase.auth.getSession()
 
-	if (authStore.isLoggedIn && to.name === 'home') {
-		// Usuario logueado no puede ir al login/registro
+	if (authStore.isLoggedIn && (to.name === 'home' || to.name === 'register')) {
+		// Usuario logueado no puede ir al login o registro
 		return next({ name: 'equipos' })
 	}
 

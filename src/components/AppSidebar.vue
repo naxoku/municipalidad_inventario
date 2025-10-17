@@ -42,6 +42,7 @@ import {
 	ArchiveOutline,
 	LogOutOutline,
 	GitCompareOutline,
+	PersonAddOutline,
 } from '@vicons/ionicons5'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
@@ -89,6 +90,11 @@ const menuOptions = computed<MenuOption[]>(() => [
 			h(RouterLink, { to: { name: 'jerarquia-equipos' } }, { default: () => 'Jerarquía Equipos' }),
 		key: 'jerarquia-equipos',
 		icon: () => h(NIcon, null, { default: () => h(GitCompareOutline) }),
+	},
+	{
+		label: () => h(RouterLink, { to: { name: 'register' } }, { default: () => 'Añadir Usuario' }),
+		key: 'register',
+		icon: () => h(NIcon, null, { default: () => h(PersonAddOutline) }),
 	},
 	{
 		label: () => h('a', { onClick: handleLogout }, 'Cerrar Sesión'),
