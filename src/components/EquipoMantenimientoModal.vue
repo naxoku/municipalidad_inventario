@@ -111,7 +111,7 @@
 									<n-form ref="formRef" :model="mantenimientoForm" :rules="rules">
 										<n-form-item label="Fecha del Mantenimiento" path="fecha">
 											<n-date-picker
-												v-model:value="mantenimientoForm.fecha"
+												v-model:value="fechaTimestamp"
 												type="date"
 												clearable
 												disabled
@@ -294,6 +294,13 @@ const mantenimientoForm: Mantenimiento & { fecha: string } = reactive({
 	notas: null,
 }) as Mantenimiento & { fecha: string }
 
+const fechaTimestamp = computed({
+	get: () => new Date(mantenimientoForm.fecha).getTime(),
+	set: (value: number) => {
+		mantenimientoForm.fecha = new Date(value).toISOString()
+	},
+})
+
 const detallesEditables = ref<{ [key: string]: string | null }>({})
 
 const camposEspecificos = computed(() => {
@@ -326,8 +333,9 @@ const estadoTagType = (estado: string) => {
 }
 
 // Función auxiliar para formatear las keys de 'detalles'
-const formatKey = (key: string): string => {
-	const formatted = key.replace(/_/g, ' ')
+const formatKey = (key: string | number): string => {
+	const keyStr = String(key)
+	const formatted = keyStr.replace(/_/g, ' ')
 	return formatted.charAt(0).toUpperCase() + formatted.slice(1)
 }
 

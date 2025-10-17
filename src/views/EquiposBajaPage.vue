@@ -129,9 +129,22 @@ import {
 } from 'naive-ui'
 import { CheckmarkCircle as CheckmarkCircleIcon, Search as SearchIcon } from '@vicons/ionicons5'
 import { supabase } from '../lib/supabaseClient'
-import type { Equipo } from '../types/equipo'
 
-const equiposBaja = ref<Equipo[]>([])
+interface EquipoBajaDisplay {
+	id: number
+	tipo_equipo: string | null
+	modelo: string
+	num_inventario: string
+	fecha_baja: string | null
+	motivo_baja: string | null
+	direccion: string | null
+	departamento: string | null
+	unidad: string | null
+	responsable: string
+	encargado_baja: string | null
+}
+
+const equiposBaja = ref<EquipoBajaDisplay[]>([])
 const cargando = ref(false)
 
 // Paginación
@@ -201,26 +214,26 @@ const columns = computed(() => [
 		title: 'Tipo',
 		key: 'tipo_equipo',
 		width: 140,
-		ellipsis: { tooltip: true },
+		ellipsis: true,
 	},
 	{
 		title: 'Modelo',
 		key: 'modelo',
 		minWidth: 180,
-		ellipsis: { tooltip: true },
+		ellipsis: true,
 	},
 	{
 		title: 'Inventario',
 		key: 'num_inventario',
 		width: 130,
-		ellipsis: { tooltip: true },
+		ellipsis: true,
 	},
 	{
 		title: 'Fecha Baja', // NUEVA
 		key: 'fecha_baja',
 		width: 140,
-		ellipsis: { tooltip: true },
-		render(row: Equipo) {
+		ellipsis: true,
+		render(row: EquipoBajaDisplay) {
 			if (row.fecha_baja) {
 				return h(NTime, {
 					time: new Date(row.fecha_baja).getTime(),
@@ -235,8 +248,8 @@ const columns = computed(() => [
 		title: 'Motivo Baja', // NUEVA
 		key: 'motivo_baja',
 		minWidth: 150,
-		ellipsis: { tooltip: true },
-		render(row: Equipo) {
+		ellipsis: true,
+		render(row: EquipoBajaDisplay) {
 			return h('span', null, row.motivo_baja || 'Sin motivo especificado')
 		},
 	},
@@ -244,8 +257,8 @@ const columns = computed(() => [
 		title: 'Últ. Dirección', // TÍTULO MODIFICADO
 		key: 'direccion',
 		width: 180,
-		ellipsis: { tooltip: true },
-		render(row: Equipo) {
+		ellipsis: true,
+		render(row: EquipoBajaDisplay) {
 			return h(NTag, { size: 'small', bordered: false }, { default: () => row.direccion || 'N/A' })
 		},
 	},
@@ -253,8 +266,8 @@ const columns = computed(() => [
 		title: 'Últ. Departamento', // TÍTULO MODIFICADO
 		key: 'departamento',
 		width: 180,
-		ellipsis: { tooltip: true },
-		render(row: Equipo) {
+		ellipsis: true,
+		render(row: EquipoBajaDisplay) {
 			return h(
 				NTag,
 				{ size: 'small', bordered: false, type: 'info' },
@@ -266,8 +279,8 @@ const columns = computed(() => [
 		title: 'Últ. Unidad', // TÍTULO MODIFICADO
 		key: 'unidad',
 		width: 150,
-		ellipsis: { tooltip: true },
-		render(row: Equipo) {
+		ellipsis: true,
+		render(row: EquipoBajaDisplay) {
 			return h(
 				NTag,
 				{ size: 'small', bordered: false, type: 'success' },
@@ -279,13 +292,13 @@ const columns = computed(() => [
 		title: 'Últ. Responsable', // TÍTULO MODIFICADO
 		key: 'responsable',
 		width: 150,
-		ellipsis: { tooltip: true },
+		ellipsis: true,
 	},
 	{
 		title: 'Encargado Baja',
 		key: 'encargado_baja',
 		width: 150,
-		ellipsis: { tooltip: true },
+		ellipsis: true,
 	},
 ])
 
@@ -330,15 +343,15 @@ const fetchEquiposBaja = async () => {
 	if (error) {
 		console.error('Error fetching equipos dados de baja:', error)
 	} else {
-		equiposBaja.value = data.filter((e: Equipo) => e.id !== 21)
+		equiposBaja.value = data.filter((e: EquipoBajaDisplay) => e.id !== 21) as EquipoBajaDisplay[]
 		itemCount.value = count || 0 // Actualizar el conteo total
-		updateFilterOptions(data) // Actualizar opciones de filtro con los datos actuales
+		updateFilterOptions(data as EquipoBajaDisplay[]) // Actualizar opciones de filtro con los datos actuales
 	}
 	cargando.value = false
 }
 
 // Función para actualizar las opciones de los selectores de filtro
-const updateFilterOptions = (currentEquipos: Equipo[]) => {
+const updateFilterOptions = (currentEquipos: EquipoBajaDisplay[]) => {
 	const tipos = new Set(currentEquipos.map((e) => e.tipo_equipo).filter(Boolean))
 	tipoEquipoOptions.value = Array.from(tipos).map((tipo) => ({
 		label: tipo as string,

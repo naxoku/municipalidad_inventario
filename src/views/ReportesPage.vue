@@ -721,7 +721,6 @@ const exportarHistorialPDF = async () => {
 			return
 		}
 
-		// Orientación horizontal ('landscape')
 		const doc = new jsPDF('landscape', 'mm', 'a4')
 
 		doc.setFontSize(18)
@@ -732,15 +731,20 @@ const exportarHistorialPDF = async () => {
 		doc.setTextColor(0)
 
 		const headers = ['Fecha', 'Tipo', 'Título', 'Descripción', 'Detalle', 'Modelo', 'Responsable']
-		const data = eventosFiltrados.value.map((e) => [
-			formatearFecha(e.fecha),
-			e.tipo.charAt(0).toUpperCase() + e.tipo.slice(1),
-			e.titulo,
-			e.descripcion,
-			e.detalle,
-			e.equipo_modelo || 'N/A',
-			e.equipo_responsable || 'N/A',
-		])
+
+		const data = eventosFiltrados.value.map((e) => {
+			const detalleTexto = typeof e.detalle === 'string' ? e.detalle : 'Ver detalle en sistema'
+
+			return [
+				formatearFecha(e.fecha),
+				e.tipo.charAt(0).toUpperCase() + e.tipo.slice(1),
+				e.titulo,
+				e.descripcion,
+				detalleTexto, // Incluir detalleTexto aquí
+				e.equipo_modelo || 'N/A',
+				e.equipo_responsable || 'N/A',
+			]
+		})
 
 		autoTable(doc, {
 			startY: 28,
@@ -763,13 +767,13 @@ const exportarHistorialPDF = async () => {
 				fillColor: [245, 245, 245],
 			},
 			columnStyles: {
-				0: { cellWidth: 25, halign: 'center' },
-				1: { cellWidth: 25, halign: 'center' },
-				2: { cellWidth: 45 },
-				3: { cellWidth: 50 },
-				4: { cellWidth: 55 },
-				5: { cellWidth: 35 },
-				6: { cellWidth: 35 },
+				0: { cellWidth: 22, halign: 'center' }, // Fecha
+				1: { cellWidth: 22, halign: 'center' }, // Tipo
+				2: { cellWidth: 45 }, // Título
+				3: { cellWidth: 55 }, // Descripción
+				4: { cellWidth: 55 }, // Detalle (nuevo)
+				5: { cellWidth: 30 }, // Modelo
+				6: { cellWidth: 30 }, // Responsable
 			},
 			margin: { left: 14, right: 14 },
 		})
@@ -935,7 +939,6 @@ const exportarReporteCompleto = async () => {
 				e.tipo.charAt(0).toUpperCase() + e.tipo.slice(1),
 				e.titulo,
 				e.descripcion,
-				e.detalle,
 				e.equipo_modelo ?? 'N/A',
 				e.equipo_responsable ?? 'N/A',
 			])
