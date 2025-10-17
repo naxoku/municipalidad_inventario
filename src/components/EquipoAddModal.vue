@@ -130,17 +130,22 @@ import {
 import { supabase } from '../lib/supabaseClient'
 import type { Equipo } from '../types/equipo'
 import {
-	organigrama,
-	opcionesDirecciones,
 	opcionesTiposDeEquipo,
 	especificacionesPorEquipo,
+	getOpcionesDirecciones,
+	getOpcionesDepartamentosByDireccion,
+	getOpcionesUnidadesByDepartamento,
 } from '@/data/listas'
-import { useAuthStore } from '@/stores/auth' // Importar el store de autenticación
+import { useAuthStore } from '@/stores/auth'
+import { useOrganigramaStore } from '@/stores/organigrama'
 
 const message = useMessage()
-const authStore = useAuthStore() // Usar el store de autenticación
+const authStore = useAuthStore()
+const organigramaStore = useOrganigramaStore()
+
 const props = defineProps<{ show: boolean }>()
 const emit = defineEmits(['update:show', 'equipoAgregado'])
+
 const mostrarModal = computed({
 	get: () => props.show,
 	set: (value) => {
@@ -148,8 +153,8 @@ const mostrarModal = computed({
 		if (!value) {
 			resetForm()
 		} else {
-			// Autocompletar el encargado de registro al abrir el modal
 			nuevoEquipo.encargado_registro = authStore.userNombre
+			organigramaStore.fetchOrganigrama() // Asegurarse de cargar el organigrama al abrir el modal
 		}
 	},
 })
@@ -176,27 +181,18 @@ const nuevoEquipo = reactive<
 	fecha_ingreso: new Date().toISOString(),
 })
 
+const opcionesDirecciones = computed(() => getOpcionesDirecciones())
+
 const opcionesDepartamentos = computed(() => {
-	const departamentos = nuevoEquipo.direccion ? organigrama[nuevoEquipo.direccion] : undefined
-	if (departamentos) {
-		return Object.keys(departamentos).map((depto) => ({
-			label: depto,
-			value: depto,
-		}))
+	if (nuevoEquipo.direccion) {
+		return getOpcionesDepartamentosByDireccion(nuevoEquipo.direccion)
 	}
 	return []
 })
 
 const opcionesUnidades = computed(() => {
-	const departamentos = nuevoEquipo.direccion ? organigrama[nuevoEquipo.direccion] : undefined
-	if (departamentos && nuevoEquipo.departamento) {
-		const unidades = departamentos[nuevoEquipo.departamento]
-		if (unidades) {
-			return unidades.map((unidad: string) => ({
-				label: unidad,
-				value: unidad,
-			}))
-		}
+	if (nuevoEquipo.departamento) {
+		return getOpcionesUnidadesByDepartamento(nuevoEquipo.departamento)
 	}
 	return []
 })
@@ -242,8 +238,8 @@ const resetForm = () => {
 		responsable: '',
 		estado: 'Activo',
 		detalles: {},
-		encargado_registro: authStore.userNombre, // Resetear también el encargado de registro
-		fecha_ingreso: new Date().toISOString(), // Resetear también la fecha de registro
+		encargado_registro: authStore.userNombre,
+		fecha_ingreso: new Date().toISOString(),
 	})
 }
 
@@ -253,7 +249,7 @@ const agregarEquipo = async () => {
 		!nuevoEquipo.modelo ||
 		!nuevoEquipo.direccion ||
 		!nuevoEquipo.departamento ||
-		!nuevoEquipo.encargado_registro // Validar el nuevo campo
+		!nuevoEquipo.encargado_registro
 	) {
 		message.error('Por favor, completa los campos obligatorios.')
 		return

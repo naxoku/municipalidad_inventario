@@ -75,8 +75,13 @@ import {
 } from 'naive-ui'
 import { supabase } from '../lib/supabaseClient'
 import type { Equipo } from '../types/equipo'
-import { organigrama, opcionesDirecciones } from '@/data/listas'
+import {
+	getOpcionesDirecciones,
+	getOpcionesDepartamentosByDireccion,
+	getOpcionesUnidadesByDepartamento,
+} from '@/data/listas'
 import { useAuthStore } from '@/stores/auth'
+import { useOrganigramaStore } from '@/stores/organigrama'
 
 const props = defineProps<{
 	show: boolean
@@ -86,6 +91,8 @@ const props = defineProps<{
 const emit = defineEmits(['update:show', 'equipoActualizado'])
 const message = useMessage()
 const authStore = useAuthStore()
+const organigramaStore = useOrganigramaStore()
+
 const encargadoReasignacion = computed(() => authStore.userNombre || 'Desconocido')
 
 const cargando = ref(false)
@@ -104,6 +111,7 @@ watch(
 			formValue.value.motivo_reasignacion = ''
 			await nextTick()
 			isLoading.value = false
+			organigramaStore.fetchOrganigrama() // Asegurarse de cargar el organigrama al abrir el modal
 		}
 	},
 	{ immediate: true, deep: true },
@@ -121,28 +129,18 @@ const resetForm = () => {
 	equipoOriginal.value = null
 }
 
+const opcionesDirecciones = computed(() => getOpcionesDirecciones())
+
 const opcionesDepartamentos = computed(() => {
-	if (formValue.value.direccion && organigrama[formValue.value.direccion]) {
-		return Object.keys(organigrama[formValue.value.direccion] ?? {}).map((depto) => ({
-			label: depto,
-			value: depto,
-		}))
+	if (formValue.value.direccion) {
+		return getOpcionesDepartamentosByDireccion(formValue.value.direccion)
 	}
 	return []
 })
 
 const opcionesUnidades = computed(() => {
-	if (
-		formValue.value.direccion &&
-		formValue.value.departamento &&
-		organigrama[formValue.value.direccion]?.[formValue.value.departamento]
-	) {
-		return organigrama[formValue.value.direccion]![formValue.value.departamento]!.map(
-			(unidad: string) => ({
-				label: unidad,
-				value: unidad,
-			}),
-		)
+	if (formValue.value.departamento) {
+		return getOpcionesUnidadesByDepartamento(formValue.value.departamento)
 	}
 	return []
 })

@@ -1,87 +1,24 @@
-// Si un departamento no tiene unidades, su valor es un arreglo vacío [].
-type Organigrama = {
-	[direccion: string]: {
-		[departamento: string]: string[]
-	}
+import { useOrganigramaStore } from '../stores/organigrama'
+import { storeToRefs } from 'pinia'
+
+// Organigrama
+export const getOpcionesDirecciones = () => {
+	const organigramaStore = useOrganigramaStore()
+	const { direcciones } = storeToRefs(organigramaStore)
+	return direcciones.value.map((dir) => ({ label: dir.nombre, value: dir.id }))
 }
 
-export const organigrama: Organigrama = {
-	'Administración Municipal': {
-		'Biblioteca Municipal': [],
-		'Complejo Deportivo': [],
-		'Departamento de Operaciones Municipales': ['Unidad de Aseo, Ornato y Medio Ambiente'],
-		'Oficina de Comunicaciones': [],
-		'Oficina de Informática': [],
-		'Oficina de Inspección Municipal': [],
-		'Sala Cuna y Jardín Municipal': [],
-		'Seguridad Pública': [],
-		'Unidad de Fomento Productivo': ['Veterinaria Municipal'],
-	},
-	'Dirección de Administración y Finanzas': {
-		'Asesor Gestión y Control Financiero': [],
-		'Convenios Externos, SII, Tesorería': [],
-		'Jefe de Adquisiciones': [],
-		'Jefe de Contabilidad': [],
-		'Jefe de Rentas y Patentes': ['Oficina de Aseo Domiciliario'],
-		'Jefe de Tesorería Municipal': ['Cementerio Municipal'],
-		'Oficina de Bienes e Inventario': [],
-		'Oficina de Remuneraciones': [],
-	},
-	'Dirección de Asesoría Jurídica': {},
-	'Dirección de Control': {
-		'Control de Presupuesto y Financiero': [],
-		'Fiscalización y Auditoría': [],
-	},
-	'Dirección de Obras Municipales': {},
-	'Dirección de Recursos Humanos': {
-		Bienestar: [],
-		'Capacitación y Gestión de Personal': [],
-		'Departamento de Personal': [],
-		'Prevención de Riesgos': [],
-	},
-	'Dirección de Tránsito y Transporte Público': {
-		'Gestión de Tránsito': [],
-		'Inspección de Tránsito': [],
-		'Licencia de Conducir': [],
-		'Permiso de Circulación': [],
-	},
-	DIDECO: {
-		'Departamento de Acción Social y Estudio': [
-			'Asistencial',
-			'Déficit Hídrico',
-			'Registro Social de Hogar',
-			'Residencia / Casa de Acogida / Casa de la Mujer',
-			'Subsidio Familiar (SAF)',
-			'Subsidio Único Familiar (SUF)',
-			'Vivienda',
-		],
-		'Departamento de Desarrollo Comunal y Vecinal': [
-			'Oficina de la Juventud',
-			'Oficina Local de la Niñez (OLN)',
-			'Oficina Organizaciones Comunitarias y Proyecto',
-		],
-		'Departamento de Planificación y Programas': ['Convenio'],
-		'Departamento de Turismo': ['Cultura', 'Oficina Municipal de Deporte', 'Turismo'],
-	},
-	'Secretaría Municipal': {
-		'Central Telefónica': [],
-		'Oficina de Informaciones, Reclamos y Sugerencias (OIRS)': [],
-		'Oficina de Partes': [],
-		'Oficina de Secretaría de Concejo': [],
-		'Oficina Transparencia': [],
-	},
-	SECPLAN: {
-		'Asesor Urbanista': [],
-		'Departamento de Licitaciones': [],
-		'Entidad Patrocinante Municipal': [],
-		Proyectos: [],
-	},
+export const getOpcionesDepartamentosByDireccion = (direccionId: string) => {
+	const organigramaStore = useOrganigramaStore()
+	const departamentos = organigramaStore.getDepartamentosByDireccion(direccionId)
+	return departamentos.map((dep) => ({ label: dep.nombre, value: dep.id }))
 }
 
-export const opcionesDirecciones = Object.keys(organigrama).map((dir) => ({
-	label: dir,
-	value: dir,
-}))
+export const getOpcionesUnidadesByDepartamento = (departamentoId: string) => {
+	const organigramaStore = useOrganigramaStore()
+	const unidades = organigramaStore.getUnidadesByDepartamento(departamentoId)
+	return unidades.map((uni) => ({ label: uni.nombre, value: uni.id }))
+}
 
 export const especificacionesPorEquipo: {
 	[key: string]: {

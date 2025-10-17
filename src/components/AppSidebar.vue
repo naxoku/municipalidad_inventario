@@ -36,7 +36,13 @@ import { h, ref, watch, computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { NLayoutSider, NMenu, NIcon } from 'naive-ui'
 import type { MenuOption } from 'naive-ui'
-import { CreateOutline, BusinessOutline, ArchiveOutline, LogOutOutline } from '@vicons/ionicons5'
+import {
+	CreateOutline,
+	BusinessOutline,
+	ArchiveOutline,
+	LogOutOutline,
+	GitCompareOutline,
+} from '@vicons/ionicons5'
 import { useThemeStore } from '../stores/theme'
 import { useAuthStore } from '../stores/auth'
 import ThemeSwitcher from './ThemeSwitcher.vue'
@@ -77,6 +83,12 @@ const menuOptions = computed<MenuOption[]>(() => [
 			h(RouterLink, { to: { name: 'equipos-baja' } }, { default: () => 'Equipos Inactivos' }),
 		key: 'equipos-baja',
 		icon: () => h(NIcon, null, { default: () => h(ArchiveOutline) }),
+	},
+	{
+		label: () =>
+			h(RouterLink, { to: { name: 'jerarquia-equipos' } }, { default: () => 'Jerarquía Equipos' }),
+		key: 'jerarquia-equipos',
+		icon: () => h(NIcon, null, { default: () => h(GitCompareOutline) }),
 	},
 	{
 		label: () => h('a', { onClick: handleLogout }, 'Cerrar Sesión'),

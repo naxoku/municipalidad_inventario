@@ -4,6 +4,7 @@ import EquiposPage from '../views/EquiposPage.vue'
 import EquiposBajaPage from '../views/EquiposBajaPage.vue'
 // import EquiposDepartamentos from '../views/EquiposDepartamentos.vue'
 import ReportesPage from '../views/ReportesPage.vue'
+import JerarquiaEquiposPage from '../views/JerarquiaEquiposPage.vue'
 import { useAuthStore } from '../stores/auth'
 import { supabase } from '../lib/supabaseClient' // Importar supabase
 
@@ -29,6 +30,12 @@ const routes = [
 		path: '/reportes',
 		name: 'reportes',
 		component: ReportesPage,
+		meta: { requiresAuth: true },
+	},
+	{
+		path: '/jerarquia-equipos',
+		name: 'jerarquia-equipos',
+		component: JerarquiaEquiposPage,
 		meta: { requiresAuth: true },
 	},
 ]

@@ -159,8 +159,6 @@ import {
 	Person as PersonIcon,
 	PersonAdd as PersonAddIcon,
 } from '@vicons/ionicons5'
-import bcrypt from 'bcryptjs'
-
 // Imágenes
 import logoNegro from '../assets/municipalidad-de-Angol-negro.png'
 import logoBlanco from '../assets/municipalidad-de-Angol-blanco.png'
@@ -187,29 +185,22 @@ const registerConfirmPassword = ref('')
 // MANEJAR LOGIN
 const handleLogin = async () => {
 	try {
-		const { data: user, error } = await supabase
-			.from('usuarios')
-			.select('*')
-			.eq('correo', loginEmail.value.trim())
-			.single()
+		const { error } = await supabase.auth.signInWithPassword({
+			email: loginEmail.value.trim(),
+			password: loginPassword.value.trim(),
+		})
 
-		if (error || !user) {
+		if (error) {
 			message.error('Usuario o contraseña incorrectos.')
+			console.error('Error al iniciar sesión:', error.message)
 			return
 		}
 
-		const validPassword = await bcrypt.compare(loginPassword.value.trim(), user.contraseña)
-		if (!validPassword) {
-			message.error('Usuario o contraseña incorrectos.')
-			return
-		}
-
-		authStore.login(user.nombre, user.correo)
 		message.success('Sesión iniciada 🚀')
 		router.push({ name: 'equipos' })
-	} catch (err) {
+	} catch (err: any) {
 		message.error('Ocurrió un error inesperado.')
-		console.error(err)
+		console.error('Error inesperado en login:', err.message)
 	}
 }
 
@@ -224,36 +215,35 @@ const handleRegister = async () => {
 		return
 	}
 
-	// Verificar si el correo ya existe
 	try {
-		const { data: existingUser } = await supabase
-			.from('usuarios')
-			.select('*')
-			.eq('correo', registerEmail.value.trim())
-			.single()
+		const { data, error } = await supabase.auth.signUp({
+			email: registerEmail.value.trim(),
+			password: registerPassword.value.trim(),
+			options: {
+				data: {
+					full_name: registerNombre.value.trim(),
+				},
+			},
+		})
 
-		if (existingUser) {
-			message.error('El correo ya está registrado.')
+		if (error) {
+			message.error('Error al crear la cuenta: ' + error.message)
+			console.error('Error al registrar usuario:', error.message)
 			return
 		}
 
-		const hashedPassword = await bcrypt.hash(registerPassword.value.trim(), 10)
-
-		// Insertar nuevo usuario
-		const { error } = await supabase.from('usuarios').insert([
-			{
-				nombre: registerNombre.value.trim(),
-				correo: registerEmail.value.trim(),
-				contraseña: hashedPassword,
-			},
-		])
-
-		if (error) throw error
-
-		message.success('Usuario creado correctamente.')
-	} catch (err) {
-		message.error('Ocurrió un error inesperado.')
-		console.error(err)
+		if (data.user) {
+			message.success('Usuario creado correctamente. Por favor, verifica tu correo electrónico.')
+			// Opcional: Limpiar el formulario o redirigir
+			registerNombre.value = ''
+			registerEmail.value = ''
+			registerPassword.value = ''
+			registerConfirmPassword.value = ''
+			router.push({ name: 'equipos' }) // Redirigir a /equipos
+		}
+	} catch (err: any) {
+		message.error('Ocurrió un error inesperado durante el registro.')
+		console.error('Error inesperado en registro:', err.message)
 	}
 }
 </script>
