@@ -72,7 +72,6 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { supabase } from '../lib/supabaseClient'
 import {
 	NSpace,
@@ -94,7 +93,6 @@ import {
 	PersonAdd as PersonAddIcon,
 } from '@vicons/ionicons5'
 
-const router = useRouter()
 const message = useMessage()
 
 // REGISTER

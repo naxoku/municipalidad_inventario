@@ -39,17 +39,6 @@
 						</template>
 						Entrar
 					</n-button>
-
-					<n-divider>
-						<n-text depth="3">o continuar con</n-text>
-					</n-divider>
-
-					<n-button block size="large" secondary @click="authStore.loginWithGoogle">
-						<template #icon>
-							<n-icon :component="LogoGoogleIcon" />
-						</template>
-						Google
-					</n-button>
 				</n-space>
 			</n-card>
 
@@ -64,7 +53,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
 import { useThemeStore } from '../stores/theme'
 import { supabase } from '../lib/supabaseClient'
 import {
@@ -76,7 +64,6 @@ import {
 	NButton,
 	NH2,
 	NText,
-	NDivider,
 	NIcon,
 	NImage,
 	useMessage,
@@ -85,7 +72,6 @@ import {
 	Mail as MailIcon,
 	LockClosed as LockClosedIcon,
 	LogIn as LogInIcon,
-	LogoGoogle as LogoGoogleIcon,
 } from '@vicons/ionicons5'
 // Imágenes
 import logoNegro from '../assets/municipalidad-de-Angol-negro.png'
@@ -93,7 +79,6 @@ import logoBlanco from '../assets/municipalidad-de-Angol-blanco.png'
 
 const router = useRouter()
 const message = useMessage()
-const authStore = useAuthStore()
 const themeStore = useThemeStore()
 
 const logoSrc = computed(() => {

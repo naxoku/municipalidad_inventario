@@ -58,8 +58,8 @@ router.beforeEach(async (to, from, next) => {
 	// Asegurarse de que la sesión de Supabase se ha cargado
 	await supabase.auth.getSession()
 
-	if (authStore.isLoggedIn && (to.name === 'home' || to.name === 'register')) {
-		// Usuario logueado no puede ir al login o registro
+	if (authStore.isLoggedIn && to.name === 'home') {
+		// Usuario logueado no puede ir al login
 		return next({ name: 'equipos' })
 	}
 
