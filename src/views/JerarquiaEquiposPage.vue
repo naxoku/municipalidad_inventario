@@ -1,153 +1,420 @@
 <template>
 	<PageHeader title="Jerarquía de Equipos" />
 	<n-card>
-		<n-button type="primary" @click="showCreateModal = true" style="margin-bottom: 15px">
-			Crear Nuevo Elemento
-		</n-button>
+		<!-- Toolbar de Acciones -->
+		<n-space justify="space-between" align="center" style="margin-bottom: 20px">
+			<n-space>
+				<n-button type="primary" @click="openCreateDrawer">
+					<template #icon>
+						<n-icon><Plus /></n-icon>
+					</template>
+					Nueva Dirección
+				</n-button>
+				<n-button @click="expandAll" quaternary>
+					<template #icon>
+						<n-icon><ChevronDown /></n-icon>
+					</template>
+					Expandir Todo
+				</n-button>
+				<n-button @click="collapseAll" quaternary>
+					<template #icon>
+						<n-icon><ChevronUp /></n-icon>
+					</template>
+					Contraer Todo
+				</n-button>
+			</n-space>
+		</n-space>
+
+		<!-- Árbol de Jerarquía -->
 		<n-spin :show="loadingTree">
+			<n-empty
+				v-if="treeData.length === 0 && !loadingTree"
+				description="No hay elementos en la jerarquía"
+			>
+				<template #extra>
+					<n-button type="primary" @click="openCreateDrawer">Crear Primera Dirección</n-button>
+				</template>
+			</n-empty>
+
 			<n-tree
+				v-else
 				block-line
 				:data="treeData"
+				:expanded-keys="expandedKeys"
+				@update:expanded-keys="expandedKeys = $event"
 				key-field="key"
 				label-field="label"
 				children-field="children"
-				:render-suffix="
-					({ option }) =>
-						h(
-							NButton,
-							{
-								size: 'small',
-								onClick: () => handleUpdateNode(option),
-							},
-							{ default: () => 'Editar' },
-						)
-				"
+				:render-prefix="renderNodePrefix"
+				:render-suffix="renderNodeActions"
 			/>
 		</n-spin>
+	</n-card>
 
-		<!-- Modal para Editar Nodo -->
-		<n-modal v-model:show="showEditModal" preset="dialog" title="Editar Nodo de Organigrama">
-			<n-form :model="formValue">
-				<n-form-item label="Nombre">
-					<n-input v-model:value="formValue.nombre" />
-				</n-form-item>
-				<n-form-item label="Tipo">
-					<n-select v-model:value="formValue.tipo" :options="nodeTypeOptions" />
-				</n-form-item>
-				<n-form-item v-if="formValue.tipo !== 'Direccion'" label="Padre">
-					<n-select v-model:value="formValue.parent_id" :options="parentOptions" clearable />
-				</n-form-item>
-				<n-form-item v-if="formValue.tipo === 'Direccion'" label="Padre">
-					<n-input value="N/A" disabled />
-				</n-form-item>
-			</n-form>
-			<template #action>
-				<n-button @click="showEditModal = false">Cancelar</n-button>
-				<n-button type="primary" @click="submitEdit">Guardar</n-button>
-			</template>
-		</n-modal>
+	<!-- Drawer para Crear Jerarquía Completa -->
+	<n-drawer
+		v-model:show="showCreateDrawer"
+		:width="600"
+		placement="right"
+		:trap-focus="false"
+		:block-scroll="false"
+	>
+		<n-drawer-content title="Crear Nueva Jerarquía" closable>
+			<n-alert type="info" style="margin-bottom: 20px">
+				Crea una dirección completa con sus departamentos y unidades. Puedes agregar los
+				departamentos y unidades opcionalmente.
+			</n-alert>
 
-		<!-- Modal para Crear Nuevo Nodo -->
-		<n-modal
-			v-model:show="showCreateModal"
-			preset="dialog"
-			title="Crear Nuevo Elemento de Organigrama"
-		>
-			<n-form :model="formCreateValue" label-placement="left" label-width="auto">
-				<n-form-item label="Nombre de la Dirección">
-					<n-input v-model:value="formCreateValue.nombre" placeholder="Nombre de la Dirección" />
-				</n-form-item>
+			<n-steps :current="currentStep" style="margin-bottom: 30px">
+				<n-step title="Dirección" description="Información básica" />
+				<n-step title="Departamentos" description="Opcional" />
+				<n-step title="Revisar" description="Confirmar" />
+			</n-steps>
 
-				<n-divider title-placement="left">Departamentos</n-divider>
-				<n-button @click="addDepartment" type="info" dashed style="margin-bottom: 15px">
-					Añadir Departamento
-				</n-button>
-
-				<div
-					v-for="(department, depIndex) in formCreateValue.children"
-					:key="depIndex"
-					style="margin-bottom: 20px; padding: 15px; border: 1px solid #eee; border-radius: 5px"
-				>
-					<n-form-item :label="`Nombre Departamento ${depIndex + 1}`">
-						<n-input v-model:value="department.nombre" placeholder="Nombre del Departamento" />
-						<n-button
-							@click="removeDepartment(depIndex)"
-							type="error"
-							size="small"
-							style="margin-left: 10px"
-						>
-							Eliminar
-						</n-button>
-					</n-form-item>
-
-					<n-divider title-placement="left" style="margin-top: 10px; margin-bottom: 10px"
-						>Unidades del Departamento {{ depIndex + 1 }}</n-divider
+			<!-- Paso 1: Dirección -->
+			<div v-show="currentStep === 1">
+				<n-form ref="direccionFormRef" :model="formCreateValue">
+					<n-card
+						v-for="(direccion, index) in formCreateValue"
+						:key="index"
+						style="margin-bottom: 20px"
+						:title="`Dirección ${index + 1}`"
 					>
-					<n-button
-						@click="addUnit(depIndex)"
-						type="info"
-						dashed
-						size="small"
-						style="margin-bottom: 10px"
-					>
-						Añadir Unidad
-					</n-button>
-
-					<div
-						v-for="(unit, unitIndex) in department.children"
-						:key="unitIndex"
-						style="margin-bottom: 10px; padding: 10px; border: 1px dashed #ccc; border-radius: 3px"
-					>
-						<n-form-item :label="`Nombre Unidad ${depIndex + 1}.${unitIndex + 1}`">
-							<n-input v-model:value="unit.nombre" placeholder="Nombre de la Unidad" />
+						<template #header-extra>
 							<n-button
-								@click="removeUnit(depIndex, unitIndex)"
+								v-if="formCreateValue.length > 1"
+								@click="removeDirection(index)"
+								tertiary
 								type="error"
 								size="small"
-								style="margin-left: 10px"
 							>
-								Eliminar
+								<template #icon>
+									<n-icon><Trash /></n-icon>
+								</template>
+								Eliminar Dirección
 							</n-button>
+						</template>
+						<n-form-item
+							label="Nombre de la Dirección"
+							:path="`[${index}].nombre`"
+							:rule="{ required: true, message: 'El nombre es requerido' }"
+						>
+							<n-input
+								v-model:value="direccion.nombre"
+								placeholder="Ej: Dirección de Operaciones"
+								size="large"
+							/>
 						</n-form-item>
+					</n-card>
+					<n-button @click="addDirection" dashed block>
+						<template #icon>
+							<n-icon><Plus /></n-icon>
+						</template>
+						Agregar otra Dirección
+					</n-button>
+				</n-form>
+
+				<n-space justify="end" style="margin-top: 20px">
+					<n-button @click="showCreateDrawer = false">Cancelar</n-button>
+					<n-button type="primary" @click="nextStep">
+						Siguiente
+						<template #icon>
+							<n-icon><ArrowForwardOutline /></n-icon>
+						</template>
+					</n-button>
+				</n-space>
+			</div>
+
+			<!-- Paso 2: Departamentos -->
+			<div v-show="currentStep === 2">
+				<n-space vertical size="large" style="width: 100%">
+					<div v-for="(direccion, dirIndex) in formCreateValue" :key="dirIndex">
+						<n-divider>{{ direccion.nombre || `Dirección ${dirIndex + 1}` }}</n-divider>
+						<n-collapse accordion>
+							<n-collapse-item
+								v-for="(department, depIndex) in direccion.children"
+								:key="depIndex"
+								:title="`Departamento ${depIndex + 1}: ${department.nombre || 'Sin nombre'}`"
+							>
+								<template #header-extra>
+									<n-popconfirm @positive-click="removeDepartment(dirIndex, depIndex)">
+										<template #trigger>
+											<n-button size="small" tertiary type="error" @click.stop>
+												<template #icon>
+													<n-icon><Trash /></n-icon>
+												</template>
+											</n-button>
+										</template>
+										¿Eliminar este departamento?
+									</n-popconfirm>
+								</template>
+
+								<n-form-item label="Nombre del Departamento">
+									<n-input
+										v-model:value="department.nombre"
+										placeholder="Ej: Departamento de Logística"
+									/>
+								</n-form-item>
+
+								<n-divider style="margin: 15px 0">Unidades</n-divider>
+
+								<n-space vertical size="small" style="width: 100%">
+									<n-card
+										v-for="(unit, unitIndex) in department.children"
+										:key="unitIndex"
+										size="small"
+										:bordered="false"
+										style="background-color: var(--n-color-target)"
+									>
+										<n-space justify="space-between" align="center">
+											<n-input
+												v-model:value="unit.nombre"
+												placeholder="Nombre de la Unidad"
+												style="flex: 1"
+											/>
+											<n-popconfirm @positive-click="removeUnit(dirIndex, depIndex, unitIndex)">
+												<template #trigger>
+													<n-button size="small" tertiary type="error">
+														<template #icon>
+															<n-icon><Trash /></n-icon>
+														</template>
+													</n-button>
+												</template>
+												¿Eliminar esta unidad?
+											</n-popconfirm>
+										</n-space>
+									</n-card>
+
+									<n-button dashed block @click="addUnit(dirIndex, depIndex)">
+										<template #icon>
+											<n-icon><Plus /></n-icon>
+										</template>
+										Agregar Unidad
+									</n-button>
+								</n-space>
+							</n-collapse-item>
+						</n-collapse>
+
+						<n-button
+							dashed
+							block
+							type="info"
+							@click="addDepartment(dirIndex)"
+							style="margin-top: 10px"
+						>
+							<template #icon>
+								<n-icon><Plus /></n-icon>
+							</template>
+							Agregar Departamento a {{ direccion.nombre || `Dirección ${dirIndex + 1}` }}
+						</n-button>
 					</div>
+				</n-space>
+
+				<n-space justify="space-between" style="margin-top: 20px">
+					<n-button @click="prevStep">
+						<template #icon>
+							<n-icon><ChevronLeft /></n-icon>
+						</template>
+						Anterior
+					</n-button>
+					<n-button type="primary" @click="nextStep">
+						Siguiente
+						<template #icon>
+							<n-icon><ArrowForwardOutline /></n-icon>
+						</template>
+					</n-button>
+				</n-space>
+			</div>
+
+			<!-- Paso 3: Revisar -->
+			<div v-show="currentStep === 3">
+				<n-alert type="success" style="margin-bottom: 20px">
+					Revisa la información antes de crear la jerarquía
+				</n-alert>
+
+				<div v-for="(direccion, index) in formCreateValue" :key="index">
+					<n-descriptions bordered :column="1" style="margin-bottom: 20px">
+						<n-descriptions-item label="Dirección">
+							<n-tag type="primary" size="large">
+								<template #icon>
+									<n-icon><Building /></n-icon>
+								</template>
+								{{ direccion.nombre }}
+							</n-tag>
+						</n-descriptions-item>
+						<n-descriptions-item label="Departamentos">
+							{{ direccion.children?.length || 0 }}
+						</n-descriptions-item>
+						<n-descriptions-item label="Unidades">
+							{{
+								direccion.children?.reduce((acc, dep) => acc + (dep.children?.length || 0), 0) || 0
+							}}
+						</n-descriptions-item>
+					</n-descriptions>
 				</div>
+
+				<n-divider />
+
+				<n-tree
+					:data="previewTreeData"
+					block-line
+					default-expand-all
+					key-field="key"
+					label-field="label"
+					children-field="children"
+					:render-prefix="renderPreviewPrefix"
+				/>
+
+				<n-space justify="space-between" style="margin-top: 20px">
+					<n-button @click="prevStep">
+						<template #icon>
+							<n-icon><ChevronLeft /></n-icon>
+						</template>
+						Anterior
+					</n-button>
+					<n-button type="primary" @click="submitCreate" :loading="creatingHierarchy">
+						<template #icon>
+							<n-icon><Check /></n-icon>
+						</template>
+						Crear Jerarquía
+					</n-button>
+				</n-space>
+			</div>
+		</n-drawer-content>
+	</n-drawer>
+
+	<!-- Drawer para Editar Nodo -->
+	<n-drawer v-model:show="showEditDrawer" :width="500" placement="right">
+		<n-drawer-content title="Editar Nodo" closable>
+			<n-alert type="info" style="margin-bottom: 20px">
+				Los cambios afectarán también a todos los equipos asociados a este nodo.
+			</n-alert>
+
+			<n-form :model="formValue" label-placement="top">
+				<n-form-item label="Tipo de Nodo">
+					<n-tag :type="getNodeTagType(formValue.tipo)" size="large">
+						{{ formValue.tipo }}
+					</n-tag>
+				</n-form-item>
+
+				<n-form-item label="Nombre">
+					<n-input v-model:value="formValue.nombre" size="large" />
+				</n-form-item>
+
+				<n-form-item v-if="formValue.tipo !== 'Direccion'" label="Nodo Padre">
+					<n-select
+						v-model:value="formValue.parent_id"
+						:options="parentOptions"
+						clearable
+						placeholder="Selecciona el nodo padre"
+					/>
+				</n-form-item>
 			</n-form>
-			<template #action>
-				<n-button @click="showCreateModal = false">Cancelar</n-button>
-				<n-button type="primary" @click="submitCreate">Crear</n-button>
+
+			<template #footer>
+				<n-space justify="end">
+					<n-button @click="showEditDrawer = false">Cancelar</n-button>
+					<n-button type="primary" @click="submitEdit" :loading="updatingNode">
+						<template #icon>
+							<n-icon><Check /></n-icon>
+						</template>
+						Guardar Cambios
+					</n-button>
+				</n-space>
 			</template>
-		</n-modal>
-	</n-card>
+		</n-drawer-content>
+	</n-drawer>
+
+	<!-- Drawer para Agregar Hijo Rápido -->
+	<n-drawer v-model:show="showAddChildDrawer" :width="450" placement="right">
+		<n-drawer-content :title="`Agregar ${addChildType} a ${selectedParentName}`" closable>
+			<n-form :model="quickAddForm" label-placement="top">
+				<n-form-item :label="`Nombre del ${addChildType}`">
+					<n-input
+						v-model:value="quickAddForm.nombre"
+						:placeholder="`Ej: ${addChildType} de...`"
+						size="large"
+						@keyup.enter="submitQuickAdd"
+					/>
+				</n-form-item>
+			</n-form>
+
+			<template #footer>
+				<n-space justify="end">
+					<n-button @click="showAddChildDrawer = false">Cancelar</n-button>
+					<n-button type="primary" @click="submitQuickAdd" :loading="addingChild">
+						<template #icon>
+							<n-icon><Plus /></n-icon>
+						</template>
+						Agregar
+					</n-button>
+				</n-space>
+			</template>
+		</n-drawer-content>
+	</n-drawer>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch, h } from 'vue'
+import { onMounted, ref, computed, h } from 'vue'
 import PageHeader from '../components/PageHeader.vue'
 import {
 	NCard,
 	NTree,
 	NButton,
-	NModal,
+	NDrawer,
+	NDrawerContent,
 	NForm,
 	NFormItem,
 	NInput,
 	NSelect,
 	NSpin,
-	useMessage,
+	NSpace,
+	NSteps,
+	NStep,
+	NAlert,
 	NDivider,
+	NCollapse,
+	NCollapseItem,
+	NTag,
+	NIcon,
+	NEmpty,
+	NDescriptions,
+	NDescriptionsItem,
+	NPopconfirm,
+	NDropdown,
+	useMessage,
+	useDialog,
+	type TreeOption,
+	type DropdownOption,
 } from 'naive-ui'
-import type { TreeOption } from 'naive-ui'
+import {
+	Plus,
+	Edit,
+	Trash,
+	ChevronDown,
+	ChevronUp,
+	ChevronLeft,
+	Check,
+	Building,
+	Briefcase,
+	Users,
+	MoreVertical,
+} from 'lucide-vue-next'
+import { ArrowForwardOutline } from '@vicons/ionicons5'
 import { useOrganigramaStore } from '../stores/organigrama'
 import { supabase } from '../lib/supabaseClient'
 
 const organigramaStore = useOrganigramaStore()
 const message = useMessage()
+const dialog = useDialog()
 
 const treeData = ref<TreeOption[]>([])
+const expandedKeys = ref<string[]>([])
 const loadingTree = ref(false)
 
-const showEditModal = ref(false)
-const editingNode = ref<any>(null)
+// Estados para edición
+const showEditDrawer = ref(false)
+const updatingNode = ref(false)
 const formValue = ref({
 	id: '',
 	nombre: '',
@@ -155,58 +422,304 @@ const formValue = ref({
 	parent_id: null as string | null,
 })
 const parentOptions = ref<Array<{ label: string; value: string }>>([])
-const nodeTypeOptions = ref([
-	{ label: 'Direccion', value: 'Direccion' },
-	{ label: 'Departamento', value: 'Departamento' },
-	{ label: 'Unidad', value: 'Unidad' },
-])
 
-const showCreateModal = ref(false)
+// Estados para creación
+const showCreateDrawer = ref(false)
+const currentStep = ref(1)
+const creatingHierarchy = ref(false)
+const direccionFormRef = ref()
 
-// Definir la interfaz para los nodos de jerarquía en el formulario de creación
 interface HierarchyNodeForm {
 	nombre: string
 	tipo: 'Direccion' | 'Departamento' | 'Unidad'
 	parent_id: string | null
-	children?: HierarchyNodeForm[] // Para departamentos y unidades anidadas
+	children?: HierarchyNodeForm[]
 }
 
-const formCreateValue = ref<HierarchyNodeForm>({
+const formCreateValue = ref<HierarchyNodeForm[]>([
+	{
+		nombre: '',
+		tipo: 'Direccion',
+		parent_id: null,
+		children: [],
+	},
+])
+
+// Estados para agregar hijo rápido
+const showAddChildDrawer = ref(false)
+const addingChild = ref(false)
+const addChildType = ref<'Departamento' | 'Unidad'>('Departamento')
+const selectedParentId = ref<string | null>(null)
+const selectedParentName = ref('')
+const quickAddForm = ref({
 	nombre: '',
-	tipo: 'Direccion', // Default a Direccion para la creación anidada
-	parent_id: null,
-	children: [],
 })
 
-const addDepartment = () => {
-	formCreateValue.value.children?.push({
+// Funciones auxiliares
+const getNodeTagType = (tipo: string) => {
+	switch (tipo) {
+		case 'Direccion':
+			return 'primary'
+		case 'Departamento':
+			return 'info'
+		case 'Unidad':
+			return 'warning'
+		default:
+			return 'default'
+	}
+}
+
+const getNodeIcon = (tipo: string) => {
+	switch (tipo) {
+		case 'Direccion':
+			return Building
+		case 'Departamento':
+			return Briefcase
+		case 'Unidad':
+			return Users
+		default:
+			return Building
+	}
+}
+
+const renderNodePrefix = ({ option }: { option: any }) => {
+	return h(
+		NTag,
+		{
+			type: getNodeTagType(option.type),
+			size: 'small',
+			round: true,
+		},
+		{
+			icon: () => h(NIcon, { component: getNodeIcon(option.type) }),
+			default: () => option.type,
+		},
+	)
+}
+
+const renderPreviewPrefix = ({ option }: { option: any }) => {
+	return h(NIcon, { component: getNodeIcon(option.type), size: 18 })
+}
+
+const renderNodeActions = ({ option }: { option: any }) => {
+	const dropdownOptions: DropdownOption[] = [
+		{
+			label: 'Editar',
+			key: 'edit',
+			icon: () => h(NIcon, { component: Edit }),
+		},
+	]
+
+	if (option.type === 'Direccion') {
+		dropdownOptions.push(
+			{
+				label: 'Agregar Departamento',
+				key: 'add-department',
+				icon: () => h(NIcon, { component: Plus }),
+			},
+			{
+				label: 'Eliminar Dirección',
+				key: 'delete',
+				icon: () => h(NIcon, { component: Trash }),
+			},
+		)
+	} else if (option.type === 'Departamento') {
+		dropdownOptions.push({
+			label: 'Agregar Unidad',
+			key: 'add-unit',
+			icon: () => h(NIcon, { component: Plus }),
+		})
+	}
+
+	const handleSelect = (key: string) => {
+		if (key === 'edit') {
+			handleUpdateNode(option)
+		} else if (key === 'add-department') {
+			openAddChildDrawer(option, 'Departamento')
+		} else if (key === 'add-unit') {
+			openAddChildDrawer(option, 'Unidad')
+		} else if (key === 'delete') {
+			handleDeleteNode(option)
+		}
+	}
+
+	return h(
+		NDropdown,
+		{
+			options: dropdownOptions,
+			onSelect: handleSelect,
+		},
+		{
+			default: () =>
+				h(
+					NButton,
+					{
+						size: 'small',
+						quaternary: true,
+						circle: true,
+					},
+					{
+						icon: () => h(NIcon, { component: MoreVertical }),
+					},
+				),
+		},
+	)
+}
+
+// Árbol de vista previa
+const previewTreeData = computed(() => {
+	return formCreateValue.value.map((direccion, dirIndex) => ({
+		key: `preview-dir-${dirIndex}`,
+		label: direccion.nombre || 'Sin nombre',
+		type: 'Direccion',
+		children:
+			direccion.children?.map((dep, depIndex) => ({
+				key: `preview-dep-${dirIndex}-${depIndex}`,
+				label: dep.nombre || 'Sin nombre',
+				type: 'Departamento',
+				children: dep.children?.map((unit, unitIndex) => ({
+					key: `preview-unit-${dirIndex}-${depIndex}-${unitIndex}`,
+					label: unit.nombre || 'Sin nombre',
+					type: 'Unidad',
+				})),
+			})) || [],
+	}))
+})
+
+// Funciones de navegación de pasos
+const nextStep = () => {
+	if (currentStep.value === 1) {
+		for (const direccion of formCreateValue.value) {
+			if (!direccion.nombre.trim()) {
+				message.error('El nombre de todas las direcciones es requerido')
+				return
+			}
+		}
+	}
+	if (currentStep.value < 3) {
+		currentStep.value++
+	}
+}
+
+const prevStep = () => {
+	if (currentStep.value > 1) {
+		currentStep.value--
+	}
+}
+
+// Funciones para manejar departamentos y unidades
+const addDirection = () => {
+	formCreateValue.value.push({
 		nombre: '',
-		tipo: 'Departamento',
-		parent_id: null, // Se asignará al guardar
+		tipo: 'Direccion',
+		parent_id: null,
 		children: [],
 	})
 }
 
-const removeDepartment = (index: number) => {
-	formCreateValue.value.children?.splice(index, 1)
+const removeDirection = (index: number) => {
+	formCreateValue.value.splice(index, 1)
 }
 
-const addUnit = (departmentIndex: number) => {
-	if (formCreateValue.value.children && formCreateValue.value.children[departmentIndex]) {
-		formCreateValue.value.children[departmentIndex].children?.push({
+const addDepartment = (directionIndex: number) => {
+	formCreateValue.value[directionIndex].children?.push({
+		nombre: '',
+		tipo: 'Departamento',
+		parent_id: null,
+		children: [],
+	})
+}
+
+const removeDepartment = (directionIndex: number, depIndex: number) => {
+	formCreateValue.value[directionIndex].children?.splice(depIndex, 1)
+}
+
+const addUnit = (directionIndex: number, departmentIndex: number) => {
+	if (formCreateValue.value[directionIndex].children?.[departmentIndex]) {
+		formCreateValue.value[directionIndex].children![departmentIndex].children?.push({
 			nombre: '',
 			tipo: 'Unidad',
-			parent_id: null, // Se asignará al guardar
+			parent_id: null,
 		})
 	}
 }
 
-const removeUnit = (departmentIndex: number, unitIndex: number) => {
-	if (formCreateValue.value.children && formCreateValue.value.children[departmentIndex].children) {
-		formCreateValue.value.children[departmentIndex].children?.splice(unitIndex, 1)
+const removeUnit = (directionIndex: number, departmentIndex: number, unitIndex: number) => {
+	if (formCreateValue.value[directionIndex].children?.[departmentIndex]?.children) {
+		formCreateValue.value[directionIndex].children![departmentIndex].children!.splice(unitIndex, 1)
 	}
 }
 
+// Abrir drawer de creación
+const openCreateDrawer = () => {
+	formCreateValue.value = [
+		{
+			nombre: '',
+			tipo: 'Direccion',
+			parent_id: null,
+			children: [],
+		},
+	]
+	currentStep.value = 1
+	showCreateDrawer.value = true
+}
+
+// Abrir drawer de agregar hijo
+const openAddChildDrawer = (parentNode: any, childType: 'Departamento' | 'Unidad') => {
+	selectedParentId.value = parentNode.key
+	selectedParentName.value = parentNode.label
+	addChildType.value = childType
+	quickAddForm.value.nombre = ''
+	showAddChildDrawer.value = true
+}
+
+// Enviar creación rápida
+const submitQuickAdd = async () => {
+	if (!quickAddForm.value.nombre.trim()) {
+		message.error('El nombre es requerido')
+		return
+	}
+
+	addingChild.value = true
+	try {
+		const { error } = await supabase.from('jerarquia_organigrama').insert({
+			nombre: quickAddForm.value.nombre,
+			tipo: addChildType.value,
+			parent_id: selectedParentId.value,
+		})
+
+		if (error) throw error
+
+		message.success(`${addChildType.value} creado correctamente`)
+		showAddChildDrawer.value = false
+		await fetchAndBuildTree()
+	} catch (err: any) {
+		message.error('Error al crear: ' + err.message)
+	} finally {
+		addingChild.value = false
+	}
+}
+
+// Expandir/Contraer todo
+const expandAll = () => {
+	const getAllKeys = (nodes: TreeOption[]): string[] => {
+		let keys: string[] = []
+		nodes.forEach((node) => {
+			keys.push(node.key as string)
+			if (node.children) {
+				keys = keys.concat(getAllKeys(node.children))
+			}
+		})
+		return keys
+	}
+	expandedKeys.value = getAllKeys(treeData.value)
+}
+
+const collapseAll = () => {
+	expandedKeys.value = []
+}
+
+// Mapear datos del organigrama
 const mapOrganigramaToTreeOptions = (nodes: any[]): TreeOption[] => {
 	return nodes.map((node) => ({
 		key: node.id,
@@ -231,8 +744,8 @@ onMounted(() => {
 	fetchAndBuildTree()
 })
 
+// Manejar actualización de nodo
 const handleUpdateNode = (node: TreeOption) => {
-	editingNode.value = node
 	formValue.value = {
 		id: node.key as string,
 		nombre: node.label as string,
@@ -240,7 +753,7 @@ const handleUpdateNode = (node: TreeOption) => {
 		parent_id: node.parentId as string | null,
 	}
 	updateParentOptions(node.type as string, node.key as string)
-	showEditModal.value = true
+	showEditDrawer.value = true
 }
 
 const updateParentOptions = (nodeType: string, nodeId: string | null) => {
@@ -260,52 +773,11 @@ const updateParentOptions = (nodeType: string, nodeId: string | null) => {
 				value: dep.id,
 			}))
 	}
-	parentOptions.value = options.filter((opt) => opt.value !== nodeId) // No puede ser padre de sí mismo
+	parentOptions.value = options.filter((opt) => opt.value !== nodeId)
 	if (nodeType === 'Direccion') {
 		formValue.value.parent_id = null
 	}
 }
-
-watch(
-	() => formValue.value.tipo,
-	(newType) => {
-		if (editingNode.value) {
-			updateParentOptions(newType, editingNode.value.key as string)
-		}
-	},
-)
-
-// El watch para formCreateValue.value.tipo ya no es necesario para actualizar createParentOptions
-// porque la creación anidada maneja las relaciones padre-hijo internamente.
-// const updateCreateParentOptions = (nodeType: string) => {
-// 	let options: Array<{ label: string; value: string }> = []
-// 	if (nodeType === 'Departamento') {
-// 		options = organigramaStore.organigramaData
-// 			.filter((node) => node.tipo === 'Direccion')
-// 			.map((dir) => ({
-// 				label: dir.nombre,
-// 				value: dir.id,
-// 			}))
-// 	} else if (nodeType === 'Unidad') {
-// 		options = organigramaStore.organigramaData
-// 			.filter((node) => node.tipo === 'Departamento')
-// 			.map((dep) => ({
-// 				label: dep.nombre,
-// 				value: dep.id,
-// 			}))
-// 	}
-// 	createParentOptions.value = options
-// 	if (nodeType === 'Direccion') {
-// 		formCreateValue.value.parent_id = null
-// 	}
-// }
-
-// watch(
-// 	() => formCreateValue.value.tipo,
-// 	(newType) => {
-// 		updateCreateParentOptions(newType)
-// 	},
-// )
 
 const getHierarchyNamesForNode = (nodeId: string | null, allNodes: any[]) => {
 	let direccionName: string | null = null
@@ -341,14 +813,8 @@ const getHierarchyNamesForNode = (nodeId: string | null, allNodes: any[]) => {
 }
 
 const submitEdit = async () => {
+	updatingNode.value = true
 	try {
-		const oldNode = organigramaStore.organigramaData.find((n) => n.id === formValue.value.id)
-		if (!oldNode) {
-			message.error('Nodo original no encontrado.')
-			return
-		}
-
-		// 1. Actualizar el nodo en la tabla jerarquia_organigrama
 		const { error: updateNodeError } = await supabase
 			.from('jerarquia_organigrama')
 			.update({
@@ -360,11 +826,8 @@ const submitEdit = async () => {
 
 		if (updateNodeError) throw updateNodeError
 
-		// 2. Recargar la jerarquía para tener los datos más recientes en la store
 		await fetchAndBuildTree()
 
-		// 3. Actualizar todos los equipos para reflejar la nueva jerarquía
-		// Obtener todos los equipos
 		const { data: allEquipos, error: fetchAllEquiposError } = await supabase
 			.from('equipos')
 			.select('id, unidad, departamento, direccion')
@@ -376,7 +839,6 @@ const submitEdit = async () => {
 			let newDepartamentoName: string | null = null
 			let newUnidadName: string | null = null
 
-			// Intentar encontrar el nodo de jerarquía más bajo al que pertenece el equipo
 			let lowestNodeId: string | null = null
 			if (equipo.unidad) {
 				const unidadNode = organigramaStore.organigramaData.find(
@@ -395,7 +857,6 @@ const submitEdit = async () => {
 				if (direccionNode) lowestNodeId = direccionNode.id
 			}
 
-			// Si encontramos un nodo de jerarquía, obtenemos sus nombres de jerarquía
 			if (lowestNodeId) {
 				const hierarchyNames = getHierarchyNamesForNode(
 					lowestNodeId,
@@ -431,76 +892,114 @@ const submitEdit = async () => {
 			}
 		}
 
-		message.success('Jerarquía y equipos actualizados correctamente.')
-		showEditModal.value = false
+		message.success('Jerarquía y equipos actualizados correctamente')
+		showEditDrawer.value = false
 	} catch (err: any) {
 		message.error('Error al actualizar: ' + err.message)
-		console.error('Error al actualizar jerarquía:', err.message)
+	} finally {
+		updatingNode.value = false
 	}
 }
 
 const submitCreate = async () => {
+	creatingHierarchy.value = true
 	try {
-		// Insertar la Dirección
-		const { data: direccionData, error: direccionError } = await supabase
-			.from('jerarquia_organigrama')
-			.insert({
-				nombre: formCreateValue.value.nombre,
-				tipo: 'Direccion',
-				parent_id: null,
-			})
-			.select()
-			.single()
+		for (const direccion of formCreateValue.value) {
+			if (!direccion.nombre.trim()) continue
 
-		if (direccionError) throw direccionError
-		if (!direccionData) throw new Error('No se pudo crear la dirección.')
-
-		const direccionId = direccionData.id
-
-		// Insertar Departamentos y sus Unidades
-		for (const department of formCreateValue.value.children || []) {
-			const { data: departamentoData, error: departamentoError } = await supabase
+			const { data: direccionData, error: direccionError } = await supabase
 				.from('jerarquia_organigrama')
 				.insert({
-					nombre: department.nombre,
-					tipo: 'Departamento',
-					parent_id: direccionId,
+					nombre: direccion.nombre,
+					tipo: 'Direccion',
+					parent_id: null,
 				})
 				.select()
 				.single()
 
-			if (departamentoError) throw departamentoError
-			if (!departamentoData) throw new Error('No se pudo crear el departamento.')
+			if (direccionError) throw direccionError
+			if (!direccionData) throw new Error('No se pudo crear la dirección.')
 
-			const departamentoId = departamentoData.id
+			const direccionId = direccionData.id
 
-			for (const unit of department.children || []) {
-				const { error: unidadError } = await supabase
+			for (const department of direccion.children || []) {
+				if (!department.nombre.trim()) continue
+
+				const { data: departamentoData, error: departamentoError } = await supabase
 					.from('jerarquia_organigrama')
 					.insert({
+						nombre: department.nombre,
+						tipo: 'Departamento',
+						parent_id: direccionId,
+					})
+					.select()
+					.single()
+
+				if (departamentoError) throw departamentoError
+				if (!departamentoData) throw new Error('No se pudo crear el departamento.')
+
+				const departamentoId = departamentoData.id
+
+				for (const unit of department.children || []) {
+					if (!unit.nombre.trim()) continue
+
+					const { error: unidadError } = await supabase.from('jerarquia_organigrama').insert({
 						nombre: unit.nombre,
 						tipo: 'Unidad',
 						parent_id: departamentoId,
 					})
-					.select()
 
-				if (unidadError) throw unidadError
+					if (unidadError) throw unidadError
+				}
 			}
 		}
 
-		message.success('Jerarquía creada correctamente.')
-		showCreateModal.value = false
-		// Resetear el formulario
-		formCreateValue.value = {
-			nombre: '',
-			tipo: 'Direccion',
-			parent_id: null,
-			children: [],
-		}
-		fetchAndBuildTree() // Recargar el árbol
+		message.success('Jerarquías creadas correctamente')
+		showCreateDrawer.value = false
+		openCreateDrawer() // Reset form
+		await fetchAndBuildTree()
 	} catch (err: any) {
 		message.error('Error al crear jerarquía: ' + err.message)
-		console.error('Error al crear jerarquía:', err.message)
+	} finally {
+		creatingHierarchy.value = false
 	}
+}
+
+const handleDeleteNode = (node: TreeOption) => {
+	dialog.warning({
+		title: 'Confirmar Eliminación',
+		content: `¿Estás seguro de que quieres eliminar "${node.label}"? Esta acción no se puede deshacer y eliminará todos los departamentos y unidades asociados.`,
+		positiveText: 'Sí, eliminar',
+		negativeText: 'Cancelar',
+		onPositiveClick: async () => {
+			try {
+				// Primero, obtén todos los descendientes del nodo a eliminar
+				const allNodes = organigramaStore.organigramaData
+				const nodesToDelete = getAllDescendants(node.key as string, allNodes)
+				nodesToDelete.push(node.key as string)
+
+				const { error } = await supabase
+					.from('jerarquia_organigrama')
+					.delete()
+					.in('id', nodesToDelete)
+
+				if (error) throw error
+
+				message.success(`"${node.label}" y toda su jerarquía han sido eliminados.`)
+				await fetchAndBuildTree()
+			} catch (err: any) {
+				message.error('Error al eliminar: ' + err.message)
+			}
+		},
+	})
+}
+
+const getAllDescendants = (parentId: string, allNodes: any[]): string[] => {
+	const children = allNodes.filter((node) => node.parent_id === parentId)
+	let descendants: string[] = children.map((c) => c.id)
+	for (const child of children) {
+		descendants = descendants.concat(getAllDescendants(child.id, allNodes))
+	}
+	return descendants
 }
 </script>

@@ -5,6 +5,7 @@ import {
 	NConfigProvider,
 	NMessageProvider,
 	NNotificationProvider,
+	NDialogProvider,
 	NLayout,
 	NGlobalStyle,
 } from 'naive-ui'
@@ -47,20 +48,22 @@ const currentTheme = computed(() => themeStore.theme)
 		<n-global-style />
 		<n-message-provider>
 			<n-notification-provider>
-				<n-layout has-sider style="height: 100vh">
-					<AppSidebar v-if="authStore.isLoggedIn" v-model:collapsed="collapsed" />
+				<n-dialog-provider>
+					<n-layout has-sider style="height: 100vh">
+						<AppSidebar v-if="authStore.isLoggedIn" v-model:collapsed="collapsed" />
 
-					<n-layout>
-						<main class="main-content">
-							<RouterView />
-						</main>
+						<n-layout>
+							<main class="main-content">
+								<RouterView />
+							</main>
+						</n-layout>
 					</n-layout>
-				</n-layout>
-				<!-- Modal de Actualización de Contraseña -->
-				<PasswordUpdateModal
-					v-model:show="showPasswordUpdateModal"
-					@passwordUpdated="handlePasswordUpdated"
-				/>
+					<!-- Modal de Actualización de Contraseña -->
+					<PasswordUpdateModal
+						v-model:show="showPasswordUpdateModal"
+						@passwordUpdated="handlePasswordUpdated"
+					/>
+				</n-dialog-provider>
 			</n-notification-provider>
 		</n-message-provider>
 	</n-config-provider>

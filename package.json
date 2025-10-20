@@ -25,6 +25,7 @@
     "framer-motion": "^12.23.22",
     "jspdf": "^3.0.3",
     "jspdf-autotable": "^5.0.2",
+    "lucide-vue-next": "^0.546.0",
     "naive-ui": "^2.43.1",
     "pinia": "^3.0.3",
     "pinia-plugin-persistedstate": "^4.5.0",
