@@ -2,12 +2,11 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import EquiposPage from '../views/EquiposPage.vue'
 import EquiposBajaPage from '../views/EquiposBajaPage.vue'
-// import EquiposDepartamentos from '../views/EquiposDepartamentos.vue'
 import ReportesPage from '../views/ReportesPage.vue'
 import JerarquiaEquiposPage from '../views/JerarquiaEquiposPage.vue'
 import RegisterPage from '../views/RegisterPage.vue'
 import { useAuthStore } from '../stores/auth'
-import { supabase } from '../lib/supabaseClient' // Importar supabase
+import { supabase } from '../lib/supabaseClient'
 
 const routes = [
 	{

@@ -73,7 +73,6 @@ import {
 	LockClosed as LockClosedIcon,
 	LogIn as LogInIcon,
 } from '@vicons/ionicons5'
-// Imágenes
 import logoNegro from '../assets/municipalidad-de-Angol-negro.png'
 import logoBlanco from '../assets/municipalidad-de-Angol-blanco.png'
 
