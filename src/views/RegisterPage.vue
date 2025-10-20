@@ -185,7 +185,7 @@ const handleRegister = async () => {
 			notification.create({
 				title: 'Usuario Creado',
 				description: 'Contraseña temporal generada',
-				content: `La contraseña temporal para ${registerEmail.value} es: ${temporaryPassword.value}. Por favor, anótala y compártela con el usuario.`,
+				content: `La contraseña temporal es: ${temporaryPassword.value}.`,
 				duration: 0, // La notificación no se cierra automáticamente
 				closable: true,
 				action: () =>
