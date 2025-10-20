@@ -5,8 +5,7 @@
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "moduleResolution": "bundler",
-    "types": ["node", "vue"],
-    "typeRoots": ["./node_modules/@types", "./node_modules"],
+    "typeRoots": ["./node_modules/@types", "./node_modules/@vue/tsconfig"],
     "paths": {
       "@/*": ["./src/*"]
     },
