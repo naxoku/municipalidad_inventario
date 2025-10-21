@@ -36,12 +36,13 @@ const routes = [
 		path: '/jerarquia-equipos',
 		name: 'jerarquia-equipos',
 		component: JerarquiaEquiposPage,
-		meta: { requiresAuth: true },
+		meta: { requiresAuth: true, requiresAdmin: true }, // Requiere admin
 	},
 	{
 		path: '/register',
 		name: 'register',
 		component: RegisterPage,
+		meta: { requiresAuth: true, requiresAdmin: true }, // Requiere admin
 	},
 ]
 
@@ -65,6 +66,12 @@ router.beforeEach(async (to, from, next) => {
 	if (to.meta.requiresAuth && !authStore.isLoggedIn) {
 		// Ruta protegida, usuario no logueado
 		return next({ name: 'home' })
+	}
+
+	// Protección de rutas de administrador
+	if (to.meta.requiresAdmin && !authStore.isAdmin) {
+		// Si la ruta requiere admin y el usuario no lo es
+		return next({ name: 'equipos' }) // Redirigir a una página segura
 	}
 
 	next() // permitir acceso

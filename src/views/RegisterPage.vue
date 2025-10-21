@@ -169,6 +169,7 @@
 <script setup lang="ts">
 import { ref, h, onMounted } from 'vue'
 import { supabase } from '../lib/supabaseClient'
+import { deleteUser as deleteUserService } from '@/services/userService' // Importar el servicio
 import {
 	NSpace,
 	NCard,
@@ -431,11 +432,21 @@ const handleRegister = async () => {
 	}
 
 	isLoading.value = true
+	// 1. Guardar la sesión actual del administrador
+	const { data: adminSessionData, error: sessionError } = await supabase.auth.getSession()
+	if (sessionError || !adminSessionData.session) {
+		message.error('No se pudo obtener la sesión actual. Por favor, inicia sesión de nuevo.')
+		isLoading.value = false
+		return
+	}
+	const adminSession = adminSessionData.session
+
 	try {
 		const newTemporaryPassword = generateRandomPassword()
 		temporaryPassword.value = newTemporaryPassword
 
-		const { data, error } = await supabase.auth.signUp({
+		// 2. Crear el nuevo usuario. Esto cambiará la sesión activa.
+		const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
 			email: registerEmail.value.trim(),
 			password: newTemporaryPassword,
 			options: {
@@ -445,19 +456,21 @@ const handleRegister = async () => {
 			},
 		})
 
-		if (error) {
-			if (error.message.includes('User already registered')) {
+		if (signUpError) {
+			if (signUpError.message.includes('User already registered')) {
 				message.error('Este correo electrónico ya está registrado.')
 			} else {
-				message.error('Error al crear la cuenta: ' + error.message)
+				message.error('Error al crear la cuenta: ' + signUpError.message)
 			}
+			// Si falla el signUp, la sesión del admin no se ve afectada.
 			return
 		}
 
-		if (data.user) {
+		if (signUpData.user) {
+			// Insertar datos adicionales en la tabla 'usuarios'
 			const { error: insertError } = await supabase.from('usuarios').insert([
 				{
-					id: data.user.id,
+					id: signUpData.user.id,
 					nombre: registerNombre.value.trim(),
 					correo: registerEmail.value.trim(),
 					admin: isAdmin.value,
@@ -466,7 +479,11 @@ const handleRegister = async () => {
 			])
 
 			if (insertError) {
-				message.error('Usuario creado pero hubo un error al guardar los datos adicionales.')
+				// Si esto falla, es un problema, pero el usuario de auth ya fue creado.
+				// Se podría intentar eliminar el usuario de auth aquí para consistencia.
+				message.error(
+					'Usuario creado en Auth, pero hubo un error al guardar los datos adicionales.',
+				)
 				return
 			}
 
@@ -497,12 +514,22 @@ const handleRegister = async () => {
 			registerEmail.value = ''
 			isAdmin.value = false
 			showRegisterModal.value = false
-			// Recargar la lista de usuarios
-			fetchUsers()
+			fetchUsers() // Recargar la lista de usuarios
 		}
-	} catch {
+	} catch (error: any) {
+		console.error('Error inesperado en el proceso de registro:', error)
 		message.error('Ocurrió un error inesperado. Revisa la consola para más detalles.')
 	} finally {
+		// 3. Restaurar la sesión del administrador
+		const { error: restoreError } = await supabase.auth.setSession({
+			access_token: adminSession.access_token,
+			refresh_token: adminSession.refresh_token,
+		})
+		if (restoreError) {
+			message.error(
+				'No se pudo restaurar la sesión del administrador. Por favor, actualiza la página.',
+			)
+		}
 		isLoading.value = false
 	}
 }
@@ -544,21 +571,15 @@ const handleUpdateUser = async () => {
 	}
 }
 
-// --- LÓGICA DE ELIMINACIÓN ---
-const handleDeleteUser = async (userId: string) => {
+// Importa y reutiliza tu cliente supabase existente
+// Ejemplo asumiendo que tienes `supabase` ya inicializado
+async function handleDeleteUser(userId: string) {
 	try {
-		const { error: deleteError } = await supabase.from('usuarios').delete().eq('id', userId)
-		if (deleteError) throw deleteError
-
-		// Aquí iría la llamada para eliminar el usuario de Supabase Auth si fuera necesario
-		// const { error: authError } = await supabase.auth.api.deleteUser(userId)
-		// NOTA: La eliminación de usuarios de Auth requiere privilegios de administrador y se hace desde el backend.
-		// Por ahora, solo lo eliminamos de nuestra tabla pública 'usuarios'.
-
+		await deleteUserService(userId)
 		message.success('Usuario eliminado correctamente.')
 		fetchUsers() // Recargar la lista de usuarios
-	} catch (error: any) {
-		message.error('Error al eliminar el usuario: ' + error.message)
+	} catch (err: any) {
+		message.error('Error al eliminar el usuario: ' + (err.message || err))
 	}
 }
 </script>

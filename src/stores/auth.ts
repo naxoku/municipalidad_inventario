@@ -7,20 +7,23 @@ export const useAuthStore = defineStore('auth', {
 		userEmail: '', // correo del usuario logueado
 		userNombre: '', // nombre del usuario logueado
 		needsPasswordReset: false, //para establecer contraseña
+		isAdmin: false, // Para saber si el usuario es administrador
 	}),
 	actions: {
 		async fetchUserProfile(userId: string) {
 			const { data, error } = await supabase
 				.from('usuarios')
-				.select('needs_password_reset')
+				.select('needs_password_reset, admin') // Pedimos también el campo 'admin'
 				.eq('id', userId)
 				.single()
 
 			if (error) {
 				console.error('Error al cargar el perfil del usuario:', error.message)
 				this.needsPasswordReset = false
+				this.isAdmin = false // Reseteamos en caso de error
 			} else if (data) {
 				this.needsPasswordReset = data.needs_password_reset
+				this.isAdmin = data.admin // Guardamos el estado de admin
 			}
 		},
 		async loginWithGoogle() {
@@ -43,6 +46,7 @@ export const useAuthStore = defineStore('auth', {
 
 supabase.auth.onAuthStateChange((event, session) => {
 	const authStore = useAuthStore()
+
 	if (event === 'SIGNED_IN' && session) {
 		authStore.isLoggedIn = true
 		authStore.userEmail = session.user?.email || ''
@@ -56,5 +60,6 @@ supabase.auth.onAuthStateChange((event, session) => {
 		authStore.userEmail = ''
 		authStore.userNombre = ''
 		authStore.needsPasswordReset = false
+		authStore.isAdmin = false // Reseteamos al cerrar sesión
 	}
 })

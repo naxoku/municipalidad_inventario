@@ -68,40 +68,51 @@ const handleLogout = () => {
 }
 
 // Menú principal (aplanado, sin children)
-const menuOptions = computed<MenuOption[]>(() => [
-	{
-		label: () => h(RouterLink, { to: { name: 'equipos' } }, { default: () => 'Inventario' }),
-		key: 'equipos',
-		icon: () => h(NIcon, null, { default: () => h(CreateOutline) }),
-	},
-	{
-		label: () => h(RouterLink, { to: { name: 'reportes' } }, { default: () => 'Reportes' }),
-		key: 'reportes',
-		icon: () => h(NIcon, null, { default: () => h(BusinessOutline) }),
-	},
-	{
-		label: () =>
-			h(RouterLink, { to: { name: 'equipos-baja' } }, { default: () => 'Equipos Inactivos' }),
-		key: 'equipos-baja',
-		icon: () => h(NIcon, null, { default: () => h(ArchiveOutline) }),
-	},
-	{
-		label: () =>
-			h(RouterLink, { to: { name: 'jerarquia-equipos' } }, { default: () => 'Jerarquía Equipos' }),
-		key: 'jerarquia-equipos',
-		icon: () => h(NIcon, null, { default: () => h(GitCompareOutline) }),
-	},
-	{
-		label: () => h(RouterLink, { to: { name: 'register' } }, { default: () => 'Añadir Usuario' }),
-		key: 'register',
-		icon: () => h(NIcon, null, { default: () => h(PersonAddOutline) }),
-	},
-	{
-		label: () => h('a', { onClick: handleLogout }, 'Cerrar Sesión'),
-		key: 'logout',
-		icon: () => h(NIcon, null, { default: () => h(LogOutOutline) }),
-	},
-])
+const menuOptions = computed<MenuOption[]>(() => {
+	const allOptions: MenuOption[] = [
+		{
+			label: () => h(RouterLink, { to: { name: 'equipos' } }, { default: () => 'Inventario' }),
+			key: 'equipos',
+			icon: () => h(NIcon, null, { default: () => h(CreateOutline) }),
+		},
+		{
+			label: () => h(RouterLink, { to: { name: 'reportes' } }, { default: () => 'Reportes' }),
+			key: 'reportes',
+			icon: () => h(NIcon, null, { default: () => h(BusinessOutline) }),
+		},
+		{
+			label: () =>
+				h(RouterLink, { to: { name: 'equipos-baja' } }, { default: () => 'Equipos Inactivos' }),
+			key: 'equipos-baja',
+			icon: () => h(NIcon, null, { default: () => h(ArchiveOutline) }),
+		},
+		{
+			label: () =>
+				h(
+					RouterLink,
+					{ to: { name: 'jerarquia-equipos' } },
+					{ default: () => 'Jerarquía Equipos' },
+				),
+			key: 'jerarquia-equipos',
+			icon: () => h(NIcon, null, { default: () => h(GitCompareOutline) }),
+			show: authStore.isAdmin, // Solo mostrar si es admin
+		},
+		{
+			label: () => h(RouterLink, { to: { name: 'register' } }, { default: () => 'Añadir Usuario' }),
+			key: 'register',
+			icon: () => h(NIcon, null, { default: () => h(PersonAddOutline) }),
+			show: authStore.isAdmin, // Solo mostrar si es admin
+		},
+		{
+			label: () => h('a', { onClick: handleLogout }, 'Cerrar Sesión'),
+			key: 'logout',
+			icon: () => h(NIcon, null, { default: () => h(LogOutOutline) }),
+		},
+	]
+
+	// Filtramos las opciones que no se deben mostrar
+	return allOptions.filter((option) => option.show !== false)
+})
 
 // Estado activo del menú
 const activeKey = ref<string | null>(null)
