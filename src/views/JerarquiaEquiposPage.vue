@@ -44,8 +44,11 @@
 			<!-- Árbol de Jerarquía -->
 			<n-card :bordered="false">
 				<n-spin :show="loadingTree">
-					<n-empty v-if="treeData.length === 0 && !loadingTree" description="No hay elementos en la jerarquía"
-						size="large">
+					<n-empty
+						v-if="treeData.length === 0 && !loadingTree"
+						description="No hay elementos en la jerarquía"
+						size="large"
+					>
 						<template #icon>
 							<n-icon :component="Building" :size="64" :depth="3" />
 						</template>
@@ -56,15 +59,30 @@
 						</template>
 					</n-empty>
 
-					<n-tree v-else block-line :data="treeData" :expanded-keys="expandedKeys"
-						@update:expanded-keys="expandedKeys = $event" key-field="key" label-field="label" children-field="children"
-						:render-prefix="renderNodePrefix" :render-suffix="renderNodeActions" />
+					<n-tree
+						v-else
+						block-line
+						:data="treeData"
+						:expanded-keys="expandedKeys"
+						@update:expanded-keys="expandedKeys = $event"
+						key-field="key"
+						label-field="label"
+						children-field="children"
+						:render-prefix="renderNodePrefix"
+						:render-suffix="renderNodeActions"
+					/>
 				</n-spin>
 			</n-card>
 		</n-space>
 
 		<!-- Drawer para Crear Jerarquía Completa -->
-		<n-drawer v-model:show="showCreateDrawer" :width="600" placement="right" :trap-focus="false" :block-scroll="false">
+		<n-drawer
+			v-model:show="showCreateDrawer"
+			:width="600"
+			placement="right"
+			:trap-focus="false"
+			:block-scroll="false"
+		>
 			<n-drawer-content title="Crear Nueva Jerarquía" closable>
 				<n-alert type="info" style="margin-bottom: 20px">
 					Crea una dirección completa con sus departamentos y unidades. Puedes agregar los
@@ -80,11 +98,20 @@
 				<!-- Paso 1: Dirección -->
 				<div v-show="currentStep === 1">
 					<n-form ref="direccionFormRef" :model="formCreateValue">
-						<n-card v-for="(direccion, index) in formCreateValue" :key="index" style="margin-bottom: 20px"
-							:title="`Dirección ${index + 1}`">
+						<n-card
+							v-for="(direccion, index) in formCreateValue"
+							:key="index"
+							style="margin-bottom: 20px"
+							:title="`Dirección ${index + 1}`"
+						>
 							<template #header-extra>
-								<n-button v-if="formCreateValue.length > 1" @click="removeDirection(index)" tertiary type="error"
-									size="small">
+								<n-button
+									v-if="formCreateValue.length > 1"
+									@click="removeDirection(index)"
+									tertiary
+									type="error"
+									size="small"
+								>
 									<template #icon>
 										<n-icon>
 											<Trash />
@@ -93,9 +120,16 @@
 									Eliminar
 								</n-button>
 							</template>
-							<n-form-item label="Nombre de la Dirección" :path="`[${index}].nombre`"
-								:rule="{ required: true, message: 'El nombre es requerido' }">
-								<n-input v-model:value="direccion.nombre" placeholder="Ej: Dirección de Operaciones" size="large" />
+							<n-form-item
+								label="Nombre de la Dirección"
+								:path="`[${index}].nombre`"
+								:rule="{ required: true, message: 'El nombre es requerido' }"
+							>
+								<n-input
+									v-model:value="direccion.nombre"
+									placeholder="Ej: Dirección de Operaciones"
+									size="large"
+								/>
 							</n-form-item>
 						</n-card>
 						<n-button @click="addDirection" dashed block>
@@ -124,15 +158,24 @@
 				<!-- Paso 2: Departamentos -->
 				<div v-show="currentStep === 2">
 					<n-space vertical size="large" style="width: 100%">
-						<n-card v-for="(direccion, dirIndex) in formCreateValue" :key="dirIndex" style="margin-bottom: 20px"
-							:title="`Dirección ${dirIndex + 1}: ${direccion.nombre || 'Sin nombre'}`">
+						<n-card
+							v-for="(direccion, dirIndex) in formCreateValue"
+							:key="dirIndex"
+							style="margin-bottom: 20px"
+							:title="`Dirección ${dirIndex + 1}: ${direccion.nombre || 'Sin nombre'}`"
+						>
 							<n-space vertical size="large" style="width: 100%">
-								<n-card v-for="(department, depIndex) in direccion.children" :key="depIndex"
-									style="margin-bottom: 10px; background-color: var(--n-color-info-light);">
+								<n-card
+									v-for="(department, depIndex) in direccion.children"
+									:key="depIndex"
+									style="margin-bottom: 10px; background-color: var(--n-color-info-light)"
+								>
 									<template #header>
 										<n-space align="center">
 											<n-icon :component="getNodeIcon('Departamento')" />
-											<span>{{ `Departamento ${depIndex + 1}: ${department.nombre || 'Sin nombre'}` }}</span>
+											<span>{{
+												`Departamento ${depIndex + 1}: ${department.nombre || 'Sin nombre'}`
+											}}</span>
 										</n-space>
 									</template>
 									<template #header-extra>
@@ -151,14 +194,22 @@
 									</template>
 
 									<n-form-item label="Nombre del Departamento">
-										<n-input v-model:value="department.nombre" placeholder="Ej: Departamento de Logística" />
+										<n-input
+											v-model:value="department.nombre"
+											placeholder="Ej: Departamento de Logística"
+										/>
 									</n-form-item>
 
 									<n-divider style="margin: 15px 0">Unidades</n-divider>
 
 									<n-space vertical size="small" style="width: 100%">
-										<n-card v-for="(unit, unitIndex) in department.children" :key="unitIndex" size="small"
-											:bordered="true" style="background-color: var(--n-color-warning-light); padding: 10px;">
+										<n-card
+											v-for="(unit, unitIndex) in department.children"
+											:key="unitIndex"
+											size="small"
+											:bordered="true"
+											style="background-color: var(--n-color-warning-light); padding: 10px"
+										>
 											<template #header>
 												<n-space align="center">
 													<n-icon :component="getNodeIcon('Unidad')" />
@@ -166,7 +217,11 @@
 												</n-space>
 											</template>
 											<n-space justify="space-between" align="center">
-												<n-input v-model:value="unit.nombre" placeholder="Nombre de la Unidad" style="flex: 1" />
+												<n-input
+													v-model:value="unit.nombre"
+													placeholder="Nombre de la Unidad"
+													style="flex: 1"
+												/>
 												<n-popconfirm @positive-click="removeUnit(dirIndex, depIndex, unitIndex)">
 													<template #trigger>
 														<n-button size="small" tertiary type="error">
@@ -193,7 +248,13 @@
 									</n-space>
 								</n-card>
 
-								<n-button dashed block type="info" @click="addDepartment(dirIndex)" style="margin-top: 10px">
+								<n-button
+									dashed
+									block
+									type="info"
+									@click="addDepartment(dirIndex)"
+									style="margin-top: 10px"
+								>
 									<template #icon>
 										<n-icon>
 											<Plus />
@@ -248,7 +309,8 @@
 							</n-descriptions-item>
 							<n-descriptions-item label="Unidades">
 								{{
-									direccion.children?.reduce((acc, dep) => acc + (dep.children?.length || 0), 0) || 0
+									direccion.children?.reduce((acc, dep) => acc + (dep.children?.length || 0), 0) ||
+									0
 								}}
 							</n-descriptions-item>
 						</n-descriptions>
@@ -256,8 +318,15 @@
 
 					<n-divider />
 
-					<n-tree :data="previewTreeData" block-line default-expand-all key-field="key" label-field="label"
-						children-field="children" :render-prefix="renderPreviewPrefix" />
+					<n-tree
+						:data="previewTreeData"
+						block-line
+						default-expand-all
+						key-field="key"
+						label-field="label"
+						children-field="children"
+						:render-prefix="renderPreviewPrefix"
+					/>
 
 					<n-space justify="space-between" style="margin-top: 20px">
 						<n-button @click="prevStep">
@@ -300,8 +369,12 @@
 					</n-form-item>
 
 					<n-form-item v-if="formValue.tipo !== 'Direccion'" label="Nodo Padre">
-						<n-select v-model:value="formValue.parent_id" :options="parentOptions" clearable
-							placeholder="Selecciona el nodo padre" />
+						<n-select
+							v-model:value="formValue.parent_id"
+							:options="parentOptions"
+							clearable
+							placeholder="Selecciona el nodo padre"
+						/>
 					</n-form-item>
 				</n-form>
 
@@ -326,8 +399,12 @@
 			<n-drawer-content :title="`Agregar ${addChildType} a ${selectedParentName}`" closable>
 				<n-form :model="quickAddForm" label-placement="top">
 					<n-form-item :label="`Nombre del ${addChildType}`">
-						<n-input v-model:value="quickAddForm.nombre" :placeholder="`Ej: ${addChildType} de...`" size="large"
-							@keyup.enter="submitQuickAdd" />
+						<n-input
+							v-model:value="quickAddForm.nombre"
+							:placeholder="`Ej: ${addChildType} de...`"
+							size="large"
+							@keyup.enter="submitQuickAdd"
+						/>
 					</n-form-item>
 				</n-form>
 
@@ -368,8 +445,6 @@ import {
 	NStep,
 	NAlert,
 	NDivider,
-	NCollapse,
-	NCollapseItem,
 	NTag,
 	NIcon,
 	NEmpty,

@@ -10,14 +10,14 @@ import {
 	NGlobalStyle,
 } from 'naive-ui'
 import AppSidebar from './components/AppSidebar.vue'
-import PasswordUpdateModal from './components/PasswordUpdateModal.vue' // Importar el nuevo modal
+import PasswordUpdateModal from './components/PasswordUpdateModal.vue'
 import { useThemeStore } from './stores/theme'
-import { useAuthStore } from './stores/auth' // Importar el store de autenticación
+import { useAuthStore } from './stores/auth'
 
 const themeStore = useThemeStore()
-const authStore = useAuthStore() // Instanciar el store de autenticación
+const authStore = useAuthStore()
 const collapsed = ref(false)
-const showPasswordUpdateModal = ref(false) // Estado para controlar la visibilidad del modal
+const showPasswordUpdateModal = ref(false)
 
 // Observar cambios en needsPasswordReset del authStore
 watch(
@@ -34,10 +34,6 @@ watch(
 
 const handlePasswordUpdated = () => {
 	showPasswordUpdateModal.value = false
-	// No usar message.success aquí, ya que useMessage no está disponible globalmente en App.vue
-	// La notificación de éxito se manejará dentro del PasswordUpdateModal
-	// Opcional: redirigir al usuario a la página principal o de inicio
-	// router.push({ name: 'home' })
 }
 
 const currentTheme = computed(() => themeStore.theme)
@@ -73,7 +69,6 @@ const currentTheme = computed(() => themeStore.theme)
 .main-content {
 	padding-left: 1.5rem;
 	padding-right: 1.5rem;
-	/* background-color: #f8f9fa; */
 	height: 100%;
 	overflow-y: auto;
 }
