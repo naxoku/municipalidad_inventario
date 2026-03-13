@@ -17,6 +17,7 @@
 						<n-select
 							v-model:value="formValue.direccion"
 							:options="opcionesDirecciones"
+							:loading="cargandoOrganigrama"
 							filterable
 						/>
 					</n-form-item>
@@ -24,6 +25,7 @@
 						<n-select
 							v-model:value="formValue.departamento"
 							:options="opcionesDepartamentos"
+							:loading="cargandoOrganigrama"
 							:disabled="!formValue.direccion || opcionesDepartamentos.length === 0"
 							filterable
 						/>
@@ -32,6 +34,7 @@
 						<n-select
 							v-model:value="formValue.unidad"
 							:options="opcionesUnidades"
+							:loading="cargandoOrganigrama"
 							:disabled="!formValue.departamento || opcionesUnidades.length === 0"
 							filterable
 						/>
@@ -79,6 +82,7 @@ import {
 	getOpcionesDirecciones,
 	getOpcionesDepartamentosByDireccion,
 	getOpcionesUnidadesByDepartamento,
+	resolveOrganigramaNombre,
 } from '@/data/listas'
 import { useAuthStore } from '@/stores/auth'
 import { useOrganigramaStore } from '@/stores/organigrama'
@@ -96,10 +100,21 @@ const organigramaStore = useOrganigramaStore()
 const encargadoReasignacion = computed(() => authStore.userNombre || 'Desconocido')
 
 const cargando = ref(false)
+const cargandoOrganigrama = ref(false)
 const formValue = ref<Partial<Equipo> & { motivo_reasignacion?: string }>({})
 const equipoOriginal = ref<Equipo | null>(null)
 
 const isLoading = ref(false)
+
+const ensureOrganigramaLoaded = async () => {
+	cargandoOrganigrama.value = true
+	await organigramaStore.fetchOrganigrama()
+	cargandoOrganigrama.value = false
+
+	if (organigramaStore.error) {
+		message.error('No se pudo cargar la lista de Dirección/Departamento/Unidad.')
+	}
+}
 
 watch(
 	() => props.equipo,
@@ -111,10 +126,18 @@ watch(
 			formValue.value.motivo_reasignacion = ''
 			await nextTick()
 			isLoading.value = false
-			organigramaStore.fetchOrganigrama() // Asegurarse de cargar el organigrama al abrir el modal
 		}
 	},
 	{ immediate: true, deep: true },
+)
+
+watch(
+	() => props.show,
+	async (isOpen) => {
+		if (isOpen) {
+			await ensureOrganigramaLoaded()
+		}
+	},
 )
 
 const handleUpdateShow = (value: boolean) => {
@@ -188,15 +211,19 @@ const guardarCambios = async () => {
 		return
 	}
 
+	const direccionNombre = resolveOrganigramaNombre(formValue.value.direccion)
+	const departamentoNombre = resolveOrganigramaNombre(formValue.value.departamento)
+	const unidadNombre = resolveOrganigramaNombre(formValue.value.unidad)
+
 	// Crear registro de reasignación
 	const nuevaReasignacion = {
 		fecha: new Date().toISOString(),
 		direccion_anterior: equipoOriginal.value.direccion,
-		direccion_nueva: formValue.value.direccion,
+		direccion_nueva: direccionNombre,
 		departamento_anterior: equipoOriginal.value.departamento,
-		departamento_nuevo: formValue.value.departamento,
+		departamento_nuevo: departamentoNombre,
 		unidad_anterior: equipoOriginal.value.unidad,
-		unidad_nueva: formValue.value.unidad,
+		unidad_nueva: unidadNombre,
 		responsable_anterior: equipoOriginal.value.responsable,
 		responsable_nuevo: formValue.value.responsable,
 		motivo: formValue.value.motivo_reasignacion || 'Sin motivo especificado',
@@ -210,9 +237,9 @@ const guardarCambios = async () => {
 	const { error } = await supabase
 		.from('equipos')
 		.update({
-			direccion: formValue.value.direccion,
-			departamento: formValue.value.departamento,
-			unidad: formValue.value.unidad,
+			direccion: direccionNombre,
+			departamento: departamentoNombre,
+			unidad: unidadNombre,
 			responsable: formValue.value.responsable,
 			historial_reasignaciones: [...historialActual, nuevaReasignacion],
 		})

@@ -141,6 +141,8 @@ const guardarCambios = async () => {
 		return
 	}
 
+	const normalizedInventario = formValue.value.num_inventario?.trim() || null
+
 	cargando.value = true
 	const { error } = await supabase
 		.from('equipos')
@@ -148,7 +150,7 @@ const guardarCambios = async () => {
 			tipo_equipo: formValue.value.tipo_equipo,
 			modelo: formValue.value.modelo,
 			num_serie: formValue.value.num_serie,
-			num_inventario: formValue.value.num_inventario,
+			num_inventario: normalizedInventario,
 			detalles: formValue.value.detalles,
 		})
 		.eq('id', props.equipo!.id)

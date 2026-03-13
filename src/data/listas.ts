@@ -1,6 +1,22 @@
 import { useOrganigramaStore } from '../stores/organigrama'
 import { storeToRefs } from 'pinia'
 
+const resolveNodeByIdOrNombre = (value: string) => {
+	const organigramaStore = useOrganigramaStore()
+	const normalizedValue = value.trim()
+
+	return (
+		organigramaStore.organigramaData.find((node) => node.id === normalizedValue) ||
+		organigramaStore.organigramaData.find((node) => node.nombre === normalizedValue)
+	)
+}
+
+export const resolveOrganigramaNombre = (value: string | null | undefined) => {
+	if (!value) return null
+	const node = resolveNodeByIdOrNombre(value)
+	return node?.nombre || value
+}
+
 // Organigrama
 export const getOpcionesDirecciones = () => {
 	const organigramaStore = useOrganigramaStore()
@@ -10,13 +26,19 @@ export const getOpcionesDirecciones = () => {
 
 export const getOpcionesDepartamentosByDireccion = (direccionId: string) => {
 	const organigramaStore = useOrganigramaStore()
-	const departamentos = organigramaStore.getDepartamentosByDireccion(direccionId)
+	const direccionNode = resolveNodeByIdOrNombre(direccionId)
+	const departamentos = organigramaStore.getDepartamentosByDireccion(
+		direccionNode?.id || direccionId,
+	)
 	return departamentos.map((dep) => ({ label: dep.nombre, value: dep.id }))
 }
 
 export const getOpcionesUnidadesByDepartamento = (departamentoId: string) => {
 	const organigramaStore = useOrganigramaStore()
-	const unidades = organigramaStore.getUnidadesByDepartamento(departamentoId)
+	const departamentoNode = resolveNodeByIdOrNombre(departamentoId)
+	const unidades = organigramaStore.getUnidadesByDepartamento(
+		departamentoNode?.id || departamentoId,
+	)
 	return unidades.map((uni) => ({ label: uni.nombre, value: uni.id }))
 }
 

@@ -36,6 +36,7 @@
 									v-model:value="nuevoEquipo.direccion"
 									placeholder="Selecciona una dirección"
 									:options="opcionesDirecciones"
+									:loading="cargandoOrganigrama"
 									filterable
 								/>
 							</n-form-item>
@@ -47,6 +48,7 @@
 									v-model:value="nuevoEquipo.departamento"
 									placeholder="Selecciona un departamento"
 									:options="opcionesDepartamentos"
+									:loading="cargandoOrganigrama"
 									:disabled="!nuevoEquipo.direccion || opcionesDepartamentos.length === 0"
 									filterable
 								/>
@@ -59,6 +61,7 @@
 									v-model:value="nuevoEquipo.unidad"
 									placeholder="Selecciona una unidad"
 									:options="opcionesUnidades"
+									:loading="cargandoOrganigrama"
 									:disabled="!nuevoEquipo.departamento || opcionesUnidades.length === 0"
 									filterable
 								/>
@@ -135,6 +138,7 @@ import {
 	getOpcionesDirecciones,
 	getOpcionesDepartamentosByDireccion,
 	getOpcionesUnidadesByDepartamento,
+	resolveOrganigramaNombre,
 } from '@/data/listas'
 import { useAuthStore } from '@/stores/auth'
 import { useOrganigramaStore } from '@/stores/organigrama'
@@ -146,6 +150,18 @@ const organigramaStore = useOrganigramaStore()
 const props = defineProps<{ show: boolean }>()
 const emit = defineEmits(['update:show', 'equipoAgregado'])
 
+const cargandoOrganigrama = ref(false)
+
+const ensureOrganigramaLoaded = async () => {
+	cargandoOrganigrama.value = true
+	await organigramaStore.fetchOrganigrama()
+	cargandoOrganigrama.value = false
+
+	if (organigramaStore.error) {
+		message.error('No se pudo cargar la lista de Dirección/Departamento/Unidad.')
+	}
+}
+
 const mostrarModal = computed({
 	get: () => props.show,
 	set: (value) => {
@@ -154,7 +170,6 @@ const mostrarModal = computed({
 			resetForm()
 		} else {
 			nuevoEquipo.encargado_registro = authStore.userNombre
-			organigramaStore.fetchOrganigrama() // Asegurarse de cargar el organigrama al abrir el modal
 		}
 	},
 })
@@ -205,6 +220,15 @@ const camposEspecificos = computed(() => {
 })
 
 watch(
+	() => props.show,
+	async (isOpen) => {
+		if (isOpen) {
+			await ensureOrganigramaLoaded()
+		}
+	},
+)
+
+watch(
 	() => nuevoEquipo.direccion,
 	() => {
 		nuevoEquipo.departamento = ''
@@ -243,6 +267,11 @@ const resetForm = () => {
 	})
 }
 
+const normalizeOptionalText = (value: string | null | undefined) => {
+	const normalized = value?.trim()
+	return normalized ? normalized : null
+}
+
 const agregarEquipo = async () => {
 	if (
 		!nuevoEquipo.tipo_equipo ||
@@ -259,10 +288,17 @@ const agregarEquipo = async () => {
 		return
 	}
 	cargandoForm.value = true
-	const { data, error } = await supabase
-		.from('equipos')
-		.insert([{ ...nuevoEquipo }])
-		.select()
+	const direccionNombre = resolveOrganigramaNombre(nuevoEquipo.direccion)
+	const departamentoNombre = resolveOrganigramaNombre(nuevoEquipo.departamento)
+	const unidadNombre = resolveOrganigramaNombre(nuevoEquipo.unidad)
+	const payload = {
+		...nuevoEquipo,
+		num_inventario: normalizeOptionalText(nuevoEquipo.num_inventario),
+		direccion: direccionNombre,
+		departamento: departamentoNombre,
+		unidad: unidadNombre,
+	}
+	const { data, error } = await supabase.from('equipos').insert([payload]).select()
 	cargandoForm.value = false
 	if (error) {
 		console.error('Error al agregar equipo:', error.message)

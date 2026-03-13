@@ -575,6 +575,10 @@ const handleUpdateUser = async () => {
 // Ejemplo asumiendo que tienes `supabase` ya inicializado
 async function handleDeleteUser(userId: string) {
 	try {
+		// Debug: mostrar token y sesión actual para validar que estemos en el proyecto correcto.
+		const { data: sessionData } = await supabase.auth.getSession()
+		console.log('Supabase session at delete time:', sessionData)
+
 		await deleteUserService(userId)
 		message.success('Usuario eliminado correctamente.')
 		fetchUsers() // Recargar la lista de usuarios

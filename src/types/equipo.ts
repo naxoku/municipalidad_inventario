@@ -4,7 +4,7 @@ export interface Equipo {
 	tipo_equipo: string | null
 	modelo: string
 	num_serie: string
-	num_inventario: string
+	num_inventario: string | null
 	direccion: string | null
 	departamento: string | null
 	unidad: string | null
